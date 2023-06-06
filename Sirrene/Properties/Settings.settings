@@ -1,7 +1,48 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Sirrene.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="IsLogin" Type="System.String" Scope="User">
+      <Value Profile="(Default)">always</Value>
+    </Setting>
+    <Setting Name="LoginMethod" Type="System.String" Scope="User">
+      <Value Profile="(Default)">login</Value>
+    </Setting>
+    <Setting Name="IsAllCookie" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="SaveDir" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="SaveFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)">rec</Value>
+    </Setting>
+    <Setting Name="SaveFile" Type="System.String" Scope="User">
+      <Value Profile="(Default)">?PID?-?UNAME?-?TITLE?</Value>
+    </Setting>
+    <Setting Name="QualityType" Type="System.String" Scope="User">
+      <Value Profile="(Default)">normal</Value>
+    </Setting>
+    <Setting Name="UseExternal" Type="System.String" Scope="User">
+      <Value Profile="(Default)">native</Value>
+    </Setting>
+    <Setting Name="ExecFile" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ffmpeg.exe;ffmpeg.exe</Value>
+    </Setting>
+    <Setting Name="ExecCommand" Type="System.String" Scope="User">
+      <Value Profile="(Default)">%HEADERS% -i "%PARA%" -c copy "%FILE%";%HEADERS% -i "%PARA%" -c copy "%FILE%"</Value>
+    </Setting>
+    <Setting Name="BreakCommand" Type="System.String" Scope="User">
+      <Value Profile="(Default)">;</Value>
+    </Setting>
+    <Setting Name="IsLogging" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="IsComment" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="IsVideo" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+  </Settings>
 </SettingsFile>

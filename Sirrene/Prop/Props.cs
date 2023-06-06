@@ -9,7 +9,7 @@ namespace Sirrene.Prop
 
     public enum IsLogin { always, none, };
     public enum LoginMethod { login, cookie, };
-    public enum UseExternal { native, ext1, ext2, ext3, };
+    public enum UseExternal { native, ext1, };
 
     public class Props
     {
@@ -25,7 +25,10 @@ namespace Sirrene.Prop
         //public static readonly string NicoLoginUrl = "https://secure.nicovideo.jp/secure/login?site=niconico";
         public static readonly string NicoLoginUrl = "https://account.nicovideo.jp/login/redirector?show_button_twitter=1&site=niconico&show_button_facebook=1&next_url=%2F";
 
-         public static readonly string[][] ReplaceWords =
+        public static readonly string[] Quality =
+    { "1080p", "720p", "480p", "360p", "低画質", };
+
+        public static readonly string[][] ReplaceWords =
             {
             new[] {"?PID?","lv1234567","ProgramId。lv1234567のような文字列。"},
             new[] {"?UNAME?","ユーザ名","ユーザ名。公式の場合、official"},
@@ -52,9 +55,7 @@ namespace Sirrene.Prop
             // "community"
             {"comId", "community.id"}, // "co\d+"
             // "program"
-            {"beginTime", "program.beginTime"}, // integer
             {"description", "program.description"}, // 放送説明
-            {"endTime", "program.endTime"}, // integer
             {"isFollowerOnly", "program.isFollowerOnly"}, // bool
             {"isPrivate", "program.isPrivate"}, // bool
             {"mediaServerType","program.mediaServerType"}, // "DMC"
@@ -94,14 +95,8 @@ namespace Sirrene.Prop
         public string[] ExecFile { get; set; }
         public string[] ExecCommand { get; set; }
         public string[] BreakCommand { get; set; }
-        public int Retry { get; set; }
-        public int ReConnectTime1 { get; set; }
-        public int ReConnectTime2 { get; set; }
-        public int Timeout1 { get; set; }
-        public int Timeout2 { get; set; }
         public bool IsLogging { get; set; }
         public bool IsComment { get; set; }
-        public bool IsSeetNo { get; set; }
         public bool IsVideo { get; set; }
 
 
@@ -111,7 +106,20 @@ namespace Sirrene.Prop
             ExecCommand = new string[2];
             BreakCommand = new string[2];
         }
+/*
+        public static int ParseProtocol(string str)
+        {
+            return (int)(Protocol)Enum.Parse(typeof(Protocol), str);
+        }
 
+        public static bool IsProtocol(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return false;
+            else
+                return Enum.IsDefined(typeof(Protocol), str);
+        }
+*/
         public static int ParseUseExternal(string str)
         {
             return (int)(UseExternal)Enum.Parse(typeof(UseExternal), str);
@@ -124,6 +132,37 @@ namespace Sirrene.Prop
             else
                 return Enum.IsDefined(typeof(UseExternal), str);
         }
+        public static int ParseQTypes(string str)
+        {
+            var result = -1;
+            var str2 = "(" + str + ")";
+            for (var i = 0; i <= Quality.Length - 1; i++)
+            {
+                if (Quality[i].IndexOf(str2) > -1)
+                {
+                    result = i;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        private static Regex RgxQType = new Regex(" \\(([\\w]+)\\)", RegexOptions.Compiled);
+        public static string EnumQTypes(int idx)
+        {
+            if (idx < 0 || idx >= Quality.Length)
+                return "";
+            return RgxQType.Match(Quality[idx]).Groups[1].Value;
+        }
+
+        public static bool IsQTypes(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return false;
+            else
+                return ParseQTypes(str) > -1 ? true : false;
+        }
+
 
         public bool LoadData(string accountdbfile)
         {
@@ -137,13 +176,12 @@ namespace Sirrene.Prop
                     this.UserID = user;
                     this.Password = pass;
                 }
-/*
                 this.IsLogin =
                     (IsLogin)Enum.Parse(typeof(IsLogin), Properties.Settings.Default.IsLogin);
                 this.LoginMethod =
                     (LoginMethod)Enum.Parse(typeof(LoginMethod), Properties.Settings.Default.LoginMethod);
-                this.SelectedCookie = Properties.Settings.Default.SelectedCookie;
-                this.IsAllCookie = Properties.Settings.Default.IsAllCookie;
+                //this.SelectedCookie = Properties.Settings.Default.SelectedCookie;
+                //this.IsAllCookie = Properties.Settings.Default.IsAllCookie;
                 this.SaveDir = Properties.Settings.Default.SaveDir;
                 this.SaveFolder = Properties.Settings.Default.SaveFolder;
                 this.SaveFile = Properties.Settings.Default.SaveFile;
@@ -152,16 +190,9 @@ namespace Sirrene.Prop
                 this.ExecFile = Properties.Settings.Default.ExecFile.Split(';');
                 this.ExecCommand = Properties.Settings.Default.ExecCommand.Split(';');
                 this.BreakCommand = Properties.Settings.Default.BreakCommand.Split(';');
-                this.Retry = Properties.Settings.Default.Retry;
-                this.ReConnectTime1 = Properties.Settings.Default.ReConnectTime1;
-                this.ReConnectTime2 = Properties.Settings.Default.ReConnectTime2;
-                this.Timeout1 = Properties.Settings.Default.Timeout1;
-                this.Timeout2 = Properties.Settings.Default.Timeout2;
                 this.IsLogging = Properties.Settings.Default.IsLogging;
                 this.IsComment = Properties.Settings.Default.IsComment;
-                this.IsSeetNo = Properties.Settings.Default.IsSeetNo;
                 this.IsVideo = Properties.Settings.Default.IsVideo;
-*/
             }
             catch (Exception Ex)
             {
@@ -175,11 +206,10 @@ namespace Sirrene.Prop
         {
             try
             {
-/*
                 Properties.Settings.Default.IsLogin = this.IsLogin.ToString().ToLower();
                 Properties.Settings.Default.LoginMethod = this.LoginMethod.ToString().ToLower();
-                Properties.Settings.Default.SelectedCookie = this.SelectedCookie;
-                Properties.Settings.Default.IsAllCookie = this.IsAllCookie;
+                //Properties.Settings.Default.SelectedCookie = this.SelectedCookie;
+                //Properties.Settings.Default.IsAllCookie = this.IsAllCookie;
                 Properties.Settings.Default.SaveDir = this.SaveDir;
                 Properties.Settings.Default.SaveFolder = this.SaveFolder;
                 Properties.Settings.Default.SaveFile = this.SaveFile;
@@ -187,17 +217,11 @@ namespace Sirrene.Prop
                 Properties.Settings.Default.ExecFile = String.Join(";", this.ExecFile);
                 Properties.Settings.Default.ExecCommand = String.Join(";", this.ExecCommand);
                 Properties.Settings.Default.BreakCommand = String.Join(";", this.BreakCommand);
-                Properties.Settings.Default.Retry = this.Retry;
-                Properties.Settings.Default.ReConnectTime1 = this.ReConnectTime1;
-                Properties.Settings.Default.ReConnectTime2 = this.ReConnectTime2;
-                Properties.Settings.Default.Timeout1 = this.Timeout1;
-                Properties.Settings.Default.Timeout2 = this.Timeout2;
                 Properties.Settings.Default.IsLogging = this.IsLogging;
                 Properties.Settings.Default.IsComment = this.IsComment;
-                Properties.Settings.Default.IsSeetNo = this.IsSeetNo;
                 Properties.Settings.Default.IsVideo = this.IsVideo;
                 Properties.Settings.Default.Save();
-*/
+
                 if (acc_flg == true)
                 {
                     using (var db = new Account(accountdbfile))
@@ -263,10 +287,10 @@ namespace Sirrene.Prop
             return Path.Combine(dir, tmp);
         }
 
-        //data-propsファイル名をGet
-        public static string GetDataPropsfile(string dir, string filename)
+        //dataJsonファイル名をGet
+        public static string GetDataJsonfile(string dir, string filename)
         {
-            var tmp = Path.GetFileNameWithoutExtension(filename) + "_data-props_" + System.DateTime.Now.ToString("yyMMdd_HHmmss") + ".log";
+            var tmp = Path.GetFileNameWithoutExtension(filename) + "_dataJson_" + System.DateTime.Now.ToString("yyMMdd_HHmmss") + ".log";
             return Path.Combine(dir, tmp);
         }
 

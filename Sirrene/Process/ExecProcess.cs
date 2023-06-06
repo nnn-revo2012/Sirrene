@@ -54,8 +54,8 @@ namespace Sirrene.Proc
                     // 標準出力を受信する
                     _ps.StartInfo.RedirectStandardOutput = true;
                     _ps.StartInfo.RedirectStandardError = true;
-                    _ps.OutputDataReceived += receivedPs;
-                    _ps.ErrorDataReceived += receivedErrorPs;
+                    _ps.OutputDataReceived += ReceivedPs;
+                    _ps.ErrorDataReceived += ReceivedErrorPs;
 
                     // 標準入力
                     _ps.StartInfo.RedirectStandardInput = true;
@@ -66,7 +66,7 @@ namespace Sirrene.Proc
                     // 同じスレッドで Exited イベントを処理するメソッドが呼び出されるようにする
                     _ps.SynchronizingObject = _form;
                     // プロセス終了時に呼び出される Exited イベントハンドラの設定
-                    _ps.Exited += exitedPs;
+                    _ps.Exited += ExitedPs;
 
                     _ps.Start();
                     _ps.Refresh();
@@ -83,22 +83,7 @@ namespace Sirrene.Proc
 
                 if (Form1.props.IsComment)
                 {
-                    if (!_bci.IsTimeShift())
-                    {
-                        if (_nNetComment.WsStatus < 1)
-                        {
-                            while (_nNetComment.WsStatus != 0) ;
-                            _nNetComment.StartGetComment();
-                        }
-                    }
-                    else if (_bci.IsTimeShift() && !_ri.IsRetry)
-                    {
-                        if (_nNetComment.WsStatus < 1)
-                        {
-                            while (_nNetComment.WsStatus != 0) ;
-                            _nNetComment.StartGetTSComment();
-                        }
-                    }
+ 
                 }
                 if (Form1.props.IsVideo)
                 {
@@ -113,7 +98,7 @@ namespace Sirrene.Proc
         }
 
 
-        private void receivedPs(object sender, DataReceivedEventArgs e)
+        private void ReceivedPs(object sender, DataReceivedEventArgs e)
         {
             try
             {
@@ -125,11 +110,11 @@ namespace Sirrene.Proc
             }
             catch (Exception Ex)
             {
-                DebugWrite.Writeln(nameof(receivedPs), Ex);
+                DebugWrite.Writeln(nameof(ReceivedPs), Ex);
             }
         }
 
-        private void receivedErrorPs(object sender, DataReceivedEventArgs e)
+        private void ReceivedErrorPs(object sender, DataReceivedEventArgs e)
         {
             try
             {
@@ -141,12 +126,12 @@ namespace Sirrene.Proc
             }
             catch (Exception Ex)
             {
-                DebugWrite.Writeln(nameof(receivedErrorPs), Ex);
+                DebugWrite.Writeln(nameof(ReceivedErrorPs), Ex);
             }
         }
 
         // プロセスの終了を捕捉する Exited イベントハンドラ
-        private void exitedPs(object sender, EventArgs e)
+        private void ExitedPs(object sender, EventArgs e)
         {
             try
             {
@@ -166,19 +151,12 @@ namespace Sirrene.Proc
                 //生放送の場合プロセスが終了したらコメントサーバーを切断する。
                 if (Form1.props.IsComment)
                 {
-                    if (!_bci.IsTimeShift() && _nNetComment.WsStatus == 0)
-                    {
-                        _nNetComment?.Close();
-                        _form.AddLog("コメントファイル出力終了", 1);
-                        _nNetComment.EndXmlDoc();
-                        _nNetComment?.Dispose();
-                        _nNetComment.WsStatus = 1;  //再接続なし
-                    }
+
                 }
             }
             catch (Exception Ex)
             {
-                DebugWrite.Writeln(nameof(exitedPs), Ex);
+                DebugWrite.Writeln(nameof(ExitedPs), Ex);
             }
         }
 

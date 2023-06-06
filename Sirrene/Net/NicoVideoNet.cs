@@ -125,10 +125,12 @@ namespace Sirrene.Net
         //*************** HTTP系 *******************
 
         //ニコニコにログイン
-        public async Task<bool> LoginNico(string mail, string pass)
+        public async Task<(bool flag, string err, int neterr)> LoginNico(string mail, string pass)
         {
+            bool flag = false;
+            string err = null;
+            int neterr = 0;
 
-            var flag = false;
             try {
                 var ps = new NameValueCollection();
                 //ログイン認証(POST)
@@ -158,136 +160,98 @@ namespace Sirrene.Net
             catch (WebException Ex)
             {
                 DebugWrite.WriteWebln(nameof(LoginNico), Ex);
-                return flag;
+                if (Ex.Status == WebExceptionStatus.ProtocolError)
+                {
+                    HttpWebResponse errres = (HttpWebResponse)Ex.Response;
+                    neterr = (int)errres.StatusCode;
+                    err = neterr.ToString() + " " + errres.StatusDescription;
+                }
+                else
+                    err = Ex.Message;
+                return (flag, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(LoginNico), Ex);
-                return flag;
+                err = Ex.Message;
+                return (flag, err, neterr);
             }
 
-            return flag;
+            return (flag, err, neterr);
         }
 
         //ログインしているかどうか取得
-        public async Task<bool> IsLoginNicoAsync()
+        public async Task<(bool flag, string err, int neterr)> IsLoginNicoAsync()
         {
+            bool flag = false;
+            string err = null;
+            int neterr = 0;
+
             try
             {
                 var hs = await _wc.DownloadStringTaskAsync(Props.NicoDomain).Timeout(_wc.timeout);
-                return Regex.IsMatch(hs, "user\\.login_status += +\\'login\\'", RegexOptions.Compiled) ? true : false;
+                flag = Regex.IsMatch(hs, "user\\.login_status += +\\'login\\'", RegexOptions.Compiled) ? true : false;
             }
             catch (WebException Ex)
             {
                 DebugWrite.WriteWebln(nameof(IsLoginNicoAsync), Ex);
-                return false;
+                if (Ex.Status == WebExceptionStatus.ProtocolError)
+                {
+                    HttpWebResponse errres = (HttpWebResponse)Ex.Response;
+                    neterr = (int)errres.StatusCode;
+                    err = neterr.ToString() + " " + errres.StatusDescription;
+                }
+                else
+                    err = Ex.Message;
+                return (flag, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(IsLoginNicoAsync), Ex);
-                return false;
+                err = Ex.Message;
+                return (flag, err, neterr);
             }
+            return (flag, err, neterr);            
         }
 
         //動画ページから動画情報を取得
-        public async Task<BroadCastInfo> GetNicoPageAsync(string nicoUrl)
+        public async Task<(JObject data, string err, int neterr)> GetNicoPageAsync(string nicoUrl)
         {
-            var bci = new BroadCastInfo(null, null, null, null);
-            bci.Status = "fail";
-            bci.Error = "notfound";
-
+            JObject data = null;
+            string err = null;
+            int neterr = 0;
             try
             {
-                var liveid = GetLiveID(nicoUrl);
-                if (string.IsNullOrEmpty(liveid)) return bci;
+                var nicoid = GetVideoID(nicoUrl);
+                if (string.IsNullOrEmpty(nicoid)) return (data, "null", neterr);
 
-                var providertype = "unama";
-                bci.Provider_Type = providertype;
-
-                var hs = await _wc.DownloadStringTaskAsync(Props.NicoLiveUrl + liveid).Timeout(_wc.timeout);
-                if (string.IsNullOrEmpty(hs)) return bci;
-                if (hs.IndexOf("window.NicoGoogleTagManagerDataLayer = [];") > 0)
-                {
-                    bci.Error = "notlogin";
-                    return bci;
-                }
-                bci.User_Id = Regex.Match(hs, "\"user_id\":([^,]*),", RegexOptions.Compiled).Groups[1].Value;
-                bci.AccountType = Regex.Match(hs, "\"member_status\":\"([^\"]*)\"", RegexOptions.Compiled).Groups[1].Value;
-                providertype = Regex.Match(hs, "\"content_type\":\"([^\"]*)\"", RegexOptions.Compiled).Groups[1].Value;
-                bci.Provider_Type = providertype;
-                var ttt = WebUtility.HtmlDecode(Regex.Match(hs, "<script +id=\"embedded-data\" +data-props=\"([^\"]*)\"></script>", RegexOptions.Compiled).Groups[1].Value);
-                bci.Data_Props = ttt;
-                bci.WsUrl = Regex.Match(ttt, @"""webSocketUrl"":""([^""]+)""").Groups[1].Value;
-                if (string.IsNullOrEmpty(bci.WsUrl))
-                {
-                    var tsenabled = Regex.Match(ttt, @"""isTimeshiftDownloadEnabled"":(\w+)").Groups[1].Value.ToLower();
-                    var follower = Regex.Match(ttt, @"""isFollowerOnly"":(\w+)").Groups[1].Value.ToLower();
-                    var status = Regex.Match(ttt, @"""status"":""(\w+)""").Groups[1].Value;
-                    if ((status == "ON_AIR" && follower == "true")
-                        || (status == "ENDED" && follower == "true" && tsenabled == "true"))
-                    {
-                        bci.Error = "require_community_member";
-                    } else if (status == "ENDED" && tsenabled == "true")
-                    {
-                        bci.Error = "notlogin or login premium account";
-                    }
-                    else
-                    {
-                        bci.Error = "program closed";
-                    }
-                    return bci;
-                }
-                bci.AuTkn = Regex.Match(ttt, @"""audienceToken"":""([^""]+)""").Groups[1].Value; ;
-                bci.FrontEndId = Regex.Match(ttt, @"""frontendId"":(\d*)").Groups[1].Value; ;
-                //Clipboard.SetText(ttt);
-                var dprops = JObject.Parse(ttt);
-                //Clipboard.SetText(dprops.ToString());
-                var dprogram = (JObject)dprops["program"];
-                bci.LiveId = dprogram["nicoliveProgramId"].ToString();
-                bci.Title = dprogram["title"].ToString();
-                bci.Description = dprogram["description"].ToString();
-                bci.Provider_Id = providertype;
-                bci.Provider_Name = "公式生放送";
-                bci.Community_Thumbnail = dprogram["thumbnail"]["small"].ToString();
-                JToken aaa;
-                if (dprogram.TryGetValue("supplier", out aaa))
-                {
-                    bci.Provider_Name = dprogram["supplier"]["name"].ToString();
-                    if (providertype == "user")
-                        bci.Provider_Id = Props.GetChNo(dprogram["supplier"]["pageUrl"].ToString());
-                }
-                bci.FollowerOnly = (bool)dprogram["isFollowerOnly"];
-                bci.Open_Time = (long)dprogram["openTime"];
-                bci.Begin_Time = (long)dprogram["beginTime"];
-                bci.End_Time = (long)dprogram["endTime"];
-                bci.OnAirStatus = dprogram["status"].ToString();
-                bci.Server_Time = (long)dprops["site"]["serverTime"];
-
-                bci.Community_Id = providertype;
-                bci.Community_Title = "公式生放送";
-                if (dprops["socialGroup"].Count() > 0)
-                {
-                    bci.Community_Id = dprops["socialGroup"]["id"].ToString();
-                    bci.Community_Title = dprops["socialGroup"]["name"].ToString();
-                    //bci.Community_Thumbnail = dprops["socialGroup"]["thumbnailSmallImageUrl"].ToString();
-                }
-                bci.Status = "ok";
-                bci.Error = "";
+                var hs = await _wc.DownloadStringTaskAsync(Props.NicoVideoUrl + nicoid).Timeout(_wc.timeout);
+                if (string.IsNullOrEmpty(hs)) return (data, "null", neterr);
+                var ttt = WebUtility.HtmlDecode(Regex.Match(hs, "data-api-data=\"([^\"]*)\"", RegexOptions.Compiled).Groups[1].Value);
+                if (string.IsNullOrEmpty(ttt))
+                    return (data, "Not found data-api-data", 0);
+                data = JObject.Parse(ttt.Replace("&quot", "\""));
             }
             catch (WebException Ex)
             {
                 DebugWrite.WriteWebln(nameof(GetNicoPageAsync), Ex);
-                bci.Error = Ex.Status.ToString();
-                return bci;
+                if (Ex.Status == WebExceptionStatus.ProtocolError)
+                {
+                    HttpWebResponse errres = (HttpWebResponse)Ex.Response;
+                    neterr = (int)errres.StatusCode;
+                    err = neterr.ToString() + " " + errres.StatusDescription;
+                }
+                else
+                    err = Ex.Message;
+                return (data, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(GetNicoPageAsync), Ex);
-                bci.Error = Ex.Message;
-                return bci;
+                err = Ex.Message;
+                return (data, err, neterr);
             }
-
-            return bci;
+            return (data, err, neterr);
         }
 
         protected virtual void Dispose(bool disposing)

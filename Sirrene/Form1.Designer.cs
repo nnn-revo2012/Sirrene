@@ -33,29 +33,32 @@ namespace Sirrene
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.ファイルFToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.録画フォルダーを開くOToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             this.終了XToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ツールTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.オプションOToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.button1 = new System.Windows.Forms.Button();
             this.listBox1 = new System.Windows.Forms.ListBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // textBox1
             // 
-            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox1.Location = new System.Drawing.Point(35, 46);
+            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.textBox1.Location = new System.Drawing.Point(61, 36);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(245, 19);
+            this.textBox1.Size = new System.Drawing.Size(302, 19);
             this.textBox1.TabIndex = 0;
             // 
             // menuStrip1
             // 
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.ファイルFToolStripMenuItem});
+            this.ファイルFToolStripMenuItem,
+            this.ツールTToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(431, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(468, 24);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -63,7 +66,7 @@ namespace Sirrene
             // 
             this.ファイルFToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.録画フォルダーを開くOToolStripMenuItem,
-            this.toolStripMenuItem2,
+            this.toolStripSeparator1,
             this.終了XToolStripMenuItem});
             this.ファイルFToolStripMenuItem.Name = "ファイルFToolStripMenuItem";
             this.ファイルFToolStripMenuItem.Size = new System.Drawing.Size(67, 20);
@@ -75,12 +78,6 @@ namespace Sirrene
             this.録画フォルダーを開くOToolStripMenuItem.Size = new System.Drawing.Size(186, 22);
             this.録画フォルダーを開くOToolStripMenuItem.Text = "録画フォルダーを開く(&O)";
             // 
-            // toolStripMenuItem2
-            // 
-            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(186, 22);
-            this.toolStripMenuItem2.Text = "------------------";
-            // 
             // 終了XToolStripMenuItem
             // 
             this.終了XToolStripMenuItem.Name = "終了XToolStripMenuItem";
@@ -88,17 +85,31 @@ namespace Sirrene
             this.終了XToolStripMenuItem.Text = "終了(&X)";
             this.終了XToolStripMenuItem.Click += new System.EventHandler(this.終了XToolStripMenuItem_Click);
             // 
+            // ツールTToolStripMenuItem
+            // 
+            this.ツールTToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.オプションOToolStripMenuItem});
+            this.ツールTToolStripMenuItem.Name = "ツールTToolStripMenuItem";
+            this.ツールTToolStripMenuItem.Size = new System.Drawing.Size(60, 20);
+            this.ツールTToolStripMenuItem.Text = "ツール(&T)";
+            // 
+            // オプションOToolStripMenuItem
+            // 
+            this.オプションOToolStripMenuItem.Name = "オプションOToolStripMenuItem";
+            this.オプションOToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.オプションOToolStripMenuItem.Text = "オプション(&O)...";
+            this.オプションOToolStripMenuItem.Click += new System.EventHandler(this.オプションOToolStripMenuItem_Click);
+            // 
             // button1
             // 
-            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(298, 44);
+            this.button1.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            this.button1.Location = new System.Drawing.Point(369, 34);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.Size = new System.Drawing.Size(83, 23);
             this.button1.TabIndex = 2;
-            this.button1.Text = "button1";
+            this.button1.Text = "DOWNLOAD";
             this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.button1.Click += new System.EventHandler(this.Button1_Click);
             // 
             // listBox1
             // 
@@ -107,14 +118,30 @@ namespace Sirrene
             this.listBox1.ItemHeight = 12;
             this.listBox1.Location = new System.Drawing.Point(0, 242);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(431, 172);
+            this.listBox1.Size = new System.Drawing.Size(468, 172);
             this.listBox1.TabIndex = 3;
+            // 
+            // label1
+            // 
+            this.label1.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(11, 39);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(44, 12);
+            this.label1.TabIndex = 4;
+            this.label1.Text = "URL/ID";
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(183, 6);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(431, 414);
+            this.ClientSize = new System.Drawing.Size(468, 414);
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.listBox1);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.textBox1);
@@ -136,10 +163,13 @@ namespace Sirrene
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem ファイルFToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 録画フォルダーを開くOToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem2;
         private System.Windows.Forms.ToolStripMenuItem 終了XToolStripMenuItem;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.ListBox listBox1;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.ToolStripMenuItem ツールTToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem オプションOToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
     }
 }
 

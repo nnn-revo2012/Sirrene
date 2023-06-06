@@ -66,7 +66,7 @@ namespace Sirrene.Rec
         public void CreateDbAll()
         {
             CreateDbMedia();
-            CreateDbComment();
+            //CreateDbComment();
             CreateDbKvs();
         }
 
@@ -134,6 +134,7 @@ namespace Sirrene.Rec
             return true;
         }
 
+/*
         public bool ReadDbMedia(ExecPsInfo epi, CommentInfo cmi, BroadCastInfo bci)
         {
             FileStream fs = null;
@@ -437,7 +438,7 @@ namespace Sirrene.Rec
             }
             return result;
         }
-
+*/
         public void CreateDbKvs()
         {
             try
@@ -489,8 +490,8 @@ namespace Sirrene.Rec
 
                 }
                 ttt = (string)datap.SelectToken(Props.PropLists["userPageUrl"]);
-                if (ttt != null)
-                    WriteDbKvs("userId", System.Data.DbType.String, Props.GetChNo(ttt));
+                //if (ttt != null)
+                //    WriteDbKvs("userId", System.Data.DbType.String, Props.GetChNo(ttt));
 
             }
             catch (Exception Ex)

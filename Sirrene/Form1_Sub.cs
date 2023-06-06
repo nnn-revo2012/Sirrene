@@ -77,14 +77,14 @@ namespace Sirrene
             }));
         }
 
-        //data-propsをファイルに書き込み
-        public void AddDataProps(string s)
+        //dataJsonをファイルに書き込み
+        public void AddDataJson(string s)
         {
             this.Invoke(new Action(() =>
             {
                 if (props.IsLogging && LogFile3 != null)
                 {
-                    System.IO.File.AppendAllText(LogFile3, JObject.Parse(s).ToString());
+                    System.IO.File.AppendAllText(LogFile3, s);
                 }
             }));
         }
@@ -107,7 +107,7 @@ namespace Sirrene
         }
 
         //放送情報を表示
-        private void DispHosoData(BroadCastInfo bci)
+        private void DispHosoData()
         {
             this.Invoke(new Action(() =>
             {

@@ -120,26 +120,26 @@ namespace Sirrene.Rec
         //Debug
         public bool IsDebug { get; set; }
 
-        public RecHtml(Form1 fo, BroadCastInfo bci, NicoNetComment nNetComment, CookieContainer cc, NicoDb ndb, RetryInfo ri)
+        public RecHtml(Form1 fo, CookieContainer cc, NicoDb ndb, RetryInfo ri)
         {
             IsDebug = false;
 
             PsStatus = -1;
-            this._nNetComment = nNetComment;
-            this._bci = bci;
+            //this._nNetComment = nNetComment;
+            //this._bci = bci;
             this._ndb = ndb;
             this._ri = ri;
             this._form = fo;
 
-            var timeout = Form1.props.Timeout1;
-            if (_bci.IsTimeShift()) timeout = Form1.props.Timeout2;
+            var timeout = 20000;
+            //if (_bci.IsTimeShift()) timeout = Form1.props.Timeout2;
             var wc = new WebClientEx();
             _wc = wc;
 
             _wc.Encoding = Encoding.UTF8;
             _wc.Proxy = null;
             _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
-            _wc.Headers.Add(HttpRequestHeader.Referer, Props.GetLiveUrl(_bci.LiveId));
+            //_wc.Headers.Add(HttpRequestHeader.Referer, Props.GetLiveUrl(_bci.LiveId));
             _wc.cookieContainer = cc;
             _wc.timeout = timeout;     
             if (IsDebug)
@@ -165,22 +165,22 @@ namespace Sirrene.Rec
                 PsStatus = 0; //実行中
                 if (Form1.props.IsComment)
                 {
-                    if (!_bci.IsTimeShift())
-                    {
-                        if (_nNetComment.WsStatus < 1)
-                        {
-                            while (_nNetComment.WsStatus != 0) ;
-                            _nNetComment.StartGetComment();
-                        }
-                    }
-                    else if (_bci.IsTimeShift() && !_ri.IsRetry)
-                    {
-                        if (_nNetComment.WsStatus < 1)
-                        {
-                            while (_nNetComment.WsStatus != 0) ;
-                            _nNetComment.StartGetTSComment();
-                        }
-                    }
+                    //if (!_bci.IsTimeShift())
+                    //{
+                    //    if (_nNetComment.WsStatus < 1)
+                    //    {
+                    //        while (_nNetComment.WsStatus != 0) ;
+                    //        _nNetComment.StartGetComment();
+                    //    }
+                   // }
+                   // else if (_bci.IsTimeShift() && !_ri.IsRetry)
+                   // {
+                   //     if (_nNetComment.WsStatus < 1)
+                   //     {
+                   //         while (_nNetComment.WsStatus != 0) ;
+                   //         _nNetComment.StartGetTSComment();
+                   //     }
+                   // }
                 }
 
                 if (Form1.props.IsVideo)
@@ -200,7 +200,7 @@ namespace Sirrene.Rec
             try
             {
                 var stime = string.Empty;
-                if (_bci.IsTimeShift())
+                //if (_bci.IsTimeShift())
                 {
                     stime = "&start=0.0";
                     if (_ndb.CountDbMedia() > 0)
@@ -211,8 +211,8 @@ namespace Sirrene.Rec
                     }
                     else
                     {
-                        if (_bci.StartTs_Time > 0)
-                            stime = "&start=" + (_bci.StartTs_Time * 60).ToString();
+                    //    if (_bci.StartTs_Time > 0)
+                    //        stime = "&start=" + (_bci.StartTs_Time * 60).ToString();
                     }
                 }
                 _form.AddExecLog("MasterFile: " + masterfile + stime + "\r\n");
@@ -235,9 +235,10 @@ namespace Sirrene.Rec
                 }
                 await Task.Delay(100);
 
+                /*
                 //速度 X2.0 & 待ち時間を変更
-                if (_bci.IsTimeShift())
-                {
+                //if (_bci.IsTimeShift())
+               // {
                     waittime = 4500;
                     delaytime = 4000;
                     if (_bci.AccountType == "premium")
@@ -258,7 +259,7 @@ namespace Sirrene.Rec
                     }
                     await Task.Delay(100);
                 }
-
+                */
                 while (PsStatus == 0)
                 {
                     if (pli.EndList)
@@ -345,14 +346,14 @@ namespace Sirrene.Rec
             //生放送の場合プロセスが終了したらコメントサーバーを切断する。
             if (Form1.props.IsComment)
             {
-                if (!_bci.IsTimeShift() && _nNetComment.WsStatus == 0)
+            /*    if (!_bci.IsTimeShift() && _nNetComment.WsStatus == 0)
                 {
                     _nNetComment?.Close();
                     _form.AddLog("コメントファイル出力終了", 1);
                     _nNetComment?.Dispose();
                     _nNetComment.WsStatus = 1;  //再接続なし
                 }
-            }
+            */}
         }
 
         public override void BreakProcess(string breakkey)

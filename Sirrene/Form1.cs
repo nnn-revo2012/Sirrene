@@ -5,6 +5,9 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using System.IO;
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 using Sirrene.Prop;
 using Sirrene.Net;
 using Sirrene.Proc;
@@ -27,7 +30,7 @@ namespace Sirrene
         private NicoDb _ndb = null;                   //NicoDb
 
         //private DataApiDataInfo dadi = null;          //動画情報
-        private string dataapidata = null;            //動画情報(string)
+        private JObject dataJson = null;            //動画情報(JObject)
         private ExecPsInfo epi = null;                //実行／保存ファイル情報
         private RetryInfo rti = null;                 //リトライ情報
 
@@ -67,7 +70,7 @@ namespace Sirrene
             if (IsBatchMode) button1.PerformClick();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void Button1_Click(object sender, EventArgs e)
         {
             try
             {
@@ -96,31 +99,26 @@ namespace Sirrene
                 LogFile2 = null;
                 LogFile3 = null;
 
-                //ニコ生に接続
+                //ニコニコに接続
                 ClearHosoData();
                 ClearLog();
 
-                /*
-                                //フォルダやファイルのチェック
-                                var save_dir = String.IsNullOrEmpty(props.SaveDir) ? System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments): props.SaveDir;
-                                if (!Directory.Exists(save_dir))
-                                {
-                                    AddLog("保存フォルダーが存在しません。", 2);
-                                    return;
-                                }
+                //フォルダやファイルのチェック
+                var save_dir = String.IsNullOrEmpty(props.SaveDir) ? System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : props.SaveDir;
+                if (!Directory.Exists(save_dir))
+                {
+                    AddLog("保存フォルダーが存在しません。", 2);
+                    return;
+                }
 
-                                var exec_file = props.ExecFile[Props.ParseProtocol(props.Protocol.ToString())];
-                                exec_file = GetExecFile(exec_file);
-                                if (props.UseExternal != UseExternal.native)
-                                    if (!File.Exists(exec_file))
-                                    {
-                                        AddLog("実行ファイルがありません。", 2);
-                                        return;
-                                    }
-                */
-
-                var save_dir = "D:\\home\\tmp";
-                var exec_file = "";
+                var exec_file = props.ExecFile[0];
+                exec_file = GetExecFile(exec_file);
+                if (props.UseExternal != UseExternal.native)
+                    if (!File.Exists(exec_file))
+                    {
+                        AddLog("実行ファイルがありません。", 2);
+                        return;
+                    }
 
                 //動画ID
                 if (!IsBatchMode)
@@ -134,9 +132,9 @@ namespace Sirrene
 
                 LogFile = Props.GetLogfile(save_dir, videoId);
                 LogFile2 = Props.GetExecLogfile(save_dir, videoId);
-                LogFile3 = Props.GetDataPropsfile(save_dir, videoId);
+                LogFile3 = Props.GetDataJsonfile(save_dir, videoId);
 
-                AddLog("録画開始します。", 1);
+                AddLog("ダウンロード開始します。", 1);
                 AddLog(string.Format("VideoID: {0}", videoId), 1);
                 textBox1.Text = NicoVideoNet.GetNicoPageUrl(videoId);
 
@@ -164,34 +162,35 @@ namespace Sirrene
             }
             catch (Exception Ex)
             {
-                AddLog(nameof(button1_Click) + "() Error: \r\n" + Ex.Message, 2);
+                AddLog(nameof(Button1_Click) + "() Error: \r\n" + Ex.Message, 2);
             }
         }
         public async void StartRec()
         {
             try
             {
-                var _nvn = new NicoVideoNet();
-
                 if (props.IsLogin == IsLogin.always)
                 {
+                    bool flag = false;
                     //ニコニコにログイン
                     switch (props.LoginMethod.ToString())
                     {
                         case "login":
+                            using (var _nvn = new NicoVideoNet())
                             using (var db = new Prop.Account(accountdbfile))
                             {
                                 var alias = "nico_01";
-                                string user = null;string pass = null;
+                                string user = null; string pass = null;
                                 if (!_nvn.IsLoginStatus)
                                 {
                                     if (db.GetSession(alias, _nvn.GetCookieContainer()))
                                     {
                                         //ニコニコにアクセスする
-                                        if (await _nvn.IsLoginNicoAsync())
+                                        (flag, _, _) = await _nvn.IsLoginNicoAsync();
+                                        if (flag)
                                         {
                                             //ログインしていればOK
-                                            AddLog("Logged in", 1);
+                                            AddLog("Already logged in", 1);
                                             break;
                                         }
                                     }
@@ -202,7 +201,8 @@ namespace Sirrene
                                         AddLog("Login Failed: can't read user or pass", 1);
                                         return;
                                     }
-                                    if (!(await _nvn.LoginNico(props.UserID, props.Password)))
+                                    (flag, _, _) = await _nvn.LoginNico(props.UserID, props.Password);
+                                    if (!flag)
                                     {
                                         AddLog("Login Failed: login error", 1);
                                         return;
@@ -215,7 +215,7 @@ namespace Sirrene
                                 }
                                 else
                                 {
-                                    AddLog("Logged in", 1);
+                                    AddLog("Already logged in", 1);
                                 }
                             }
                             break;
@@ -237,62 +237,39 @@ namespace Sirrene
                             }
 */
                             break;
-                    }
+                    } //switch
                 }
                 else
                 {
                     AddLog("ログインなし", 1);
                 }
 
-                //番組情報を取得する
-                dataapidata = await _nvn.GetNicoPageAsync(videoId);
-                AddDataProps(bci.Data_Props);
-                if (bci.Status != "ok")
+                //動画情報を取得する
+                string err;
+                int neterr;
+                using (var _nvn = new NicoVideoNet())
+                    (dataJson, err, neterr) = await _nvn.GetNicoPageAsync(videoId);
+                if (err != null)
                 {
-                    AddLog("放送情報が取得できませんでした。", 1);
-                    AddLog("Status: " + bci.Error, 1);
+                    AddLog("この動画は存在しないか、削除された可能性があります。 (" + err + ")", 1);
                     return;
                 }
-                AddLog("Account: " + bci.AccountType, 1);
-                var ws_ver = Regex.Match(bci.WsUrl, @"/wsapi/([^/]*)/").Groups[1].Value;
-                if (ws_ver == "v2")
-                    AddLog("WebSocket v2", 1);
-                else if (ws_ver == "v1")
-                {
-                    AddLog("WebSocket v1", 1);
-                    return;
-                }
-                else
-                {
-                    AddLog("WebSocket不明", 1);
-                    return;
-                }
-
-                //ＴＳ開始時間
-                int ii;
-                if (int.TryParse(textBox2.Text, out ii))
-                    bci.StartTs_Time = ii;
-
-                if (props.Protocol == Protocol.rtmp)
-                {
-                    if (bci.IsTimeShift() || bci.Provider_Type != "official")
-                    {
-                        AddLog("RTMP録画は公式の生放送のみです。", 1);
-                        return;
-                    }
-                }
-
+                //AddLog("Account: " + bci.AccountType, 1);
+                AddDataJson(dataJson.ToString());
                 //保存ファイル名作成
                 epi = new ExecPsInfo();
                 epi.Sdir = string.IsNullOrEmpty(props.SaveDir) ? System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : props.SaveDir;
-                epi.Exec = GetExecFile(props.ExecFile[Props.ParseProtocol(props.Protocol.ToString())]);
-                epi.Arg = props.ExecCommand[Props.ParseProtocol(props.Protocol.ToString())];
-                epi.Sfile = bci.SetRecFileFormat(props.SaveFile);
-                epi.Sfolder = bci.SetRecFolderFormat(props.SaveFolder);
-                epi.Protocol = props.Protocol.ToString();
+                epi.Exec = GetExecFile(props.ExecFile[0]);
+                epi.Arg = props.ExecCommand[0];
+                //epi.Sfile = bci.SetRecFileFormat(props.SaveFile);
+                //epi.Sfolder = bci.SetRecFolderFormat(props.SaveFolder);
+                epi.Sfile = props.SaveFile;
+                epi.Sfolder = props.SaveFolder;
+                epi.Protocol = "hls";
                 epi.Seq = 0;
                 ExecPsInfo.MakeRecDir(epi);
 
+/*
                 if (props.Protocol == Protocol.hls && props.UseExternal == UseExternal.native)
                 {
                     var file = ExecPsInfo.GetSaveFileSqlite3(epi);
@@ -305,7 +282,6 @@ namespace Sirrene
                     _ndb.WriteDbKvsProps(bci.Data_Props);
                 }
 
-/*
                 //コメント情報
                 if (props.IsComment)
                 {
@@ -319,7 +295,7 @@ namespace Sirrene
                         cctl = null;
                     _nNetComment = new NicoNetComment(this, bci, cmi, _nvn, _ndb, cctl);
                 }
-*/
+
                 var ri = new RetryInfo();
                 rti = ri;
                 rti.Count = props.Retry;
@@ -347,8 +323,8 @@ namespace Sirrene
                     //await CheckStatus();
                     await Task.Delay(1000);
                 }
-
-            }
+*/
+            } // try
             catch (Exception Ex)
             {
                 AddLog(nameof(StartRec) + "() Error: \r\n" + Ex.Message, 2);
@@ -375,6 +351,23 @@ namespace Sirrene
             this.Close();
         }
 
+        private void オプションOToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                LogFile = null;
+                LogFile2 = null;
+
+                using (var fo2 = new Form2(this, accountdbfile))
+                {
+                    fo2.ShowDialog();
+                }
+            }
+            catch (Exception Ex)
+            {
+                AddLog("オプションメニューが開けませんでした。\r\n" + Ex.Message, 2);
+            }
+        }
     }
 
 }
