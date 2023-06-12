@@ -85,7 +85,7 @@ namespace Sirrene.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("?PID?-?UNAME?-?TITLE?")]
+        [global::System.Configuration.DefaultSettingValueAttribute("%id%%TITLE%")]
         public string SaveFile {
             get {
                 return ((string)(this["SaveFile"]));

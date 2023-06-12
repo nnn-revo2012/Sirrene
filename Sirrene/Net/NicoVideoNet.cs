@@ -99,12 +99,17 @@ namespace Sirrene.Net
 
             return result.ToList();
         }
-
         public CookieContainer GetCookieContainer()
         {
             return _wc.cookieContainer;
         }
 
+        public void SetCookieContainer(CookieContainer cookie)
+        {
+            if (cookie != null)
+                _wc.cookieContainer = cookie;
+            return;
+        }
         //*************** URL系 *******************
 
         //動画URLから動画IDをゲット(sm|nm|so00000000000)
@@ -229,7 +234,12 @@ namespace Sirrene.Net
                 if (string.IsNullOrEmpty(hs)) return (data, "null", neterr);
                 var ttt = WebUtility.HtmlDecode(Regex.Match(hs, "data-api-data=\"([^\"]*)\"", RegexOptions.Compiled).Groups[1].Value);
                 if (string.IsNullOrEmpty(ttt))
-                    return (data, "Not found data-api-data", 0);
+                {
+                    if (hs.IndexOf("window.NicoGoogleTagManagerDataLayer = [];") > 0)
+                        return (data, "Not login and not found data-api-data. Need login.", 0);
+                    else
+                        return (data, "Not found data-api-data", 0);
+                }
                 data = JObject.Parse(ttt.Replace("&quot", "\""));
             }
             catch (WebException Ex)

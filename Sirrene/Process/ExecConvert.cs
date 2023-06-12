@@ -51,8 +51,8 @@ namespace Sirrene.Proc
                 // 標準出力を受信する
                 _ps.StartInfo.RedirectStandardOutput = true;
                 _ps.StartInfo.RedirectStandardError = true;
-                _ps.OutputDataReceived += receivedPs;
-                _ps.ErrorDataReceived += receivedErrorPs;
+                _ps.OutputDataReceived += ReceivedPs;
+                _ps.ErrorDataReceived += ReceivedErrorPs;
 
                 // 標準入力
                 _ps.StartInfo.RedirectStandardInput = true;
@@ -86,7 +86,7 @@ namespace Sirrene.Proc
         }
 
 
-        private void receivedPs(object sender, DataReceivedEventArgs e)
+        private void ReceivedPs(object sender, DataReceivedEventArgs e)
         {
             try
             {
@@ -98,11 +98,11 @@ namespace Sirrene.Proc
             }
             catch (Exception Ex)
             {
-                DebugWrite.Writeln(nameof(receivedPs), Ex);
+                DebugWrite.Writeln(nameof(ReceivedPs), Ex);
             }
         }
 
-        private void receivedErrorPs(object sender, DataReceivedEventArgs e)
+        private void ReceivedErrorPs(object sender, DataReceivedEventArgs e)
         {
             try
             {
@@ -114,7 +114,7 @@ namespace Sirrene.Proc
             }
             catch (Exception Ex)
             {
-                DebugWrite.Writeln(nameof(receivedErrorPs), Ex);
+                DebugWrite.Writeln(nameof(ReceivedErrorPs), Ex);
             }
         }
 

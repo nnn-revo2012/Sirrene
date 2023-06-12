@@ -67,7 +67,7 @@ namespace Sirrene.Rec
         {
             CreateDbMedia();
             //CreateDbComment();
-            CreateDbKvs();
+            //CreateDbKvs();
         }
 
         public void CreateDbMedia()

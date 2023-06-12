@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -33,6 +34,7 @@ namespace Sirrene
         private JObject dataJson = null;            //動画情報(JObject)
         private ExecPsInfo epi = null;                //実行／保存ファイル情報
         private RetryInfo rti = null;                 //リトライ情報
+        private CookieContainer cookiecontainer = new CookieContainer();
 
         private string videoId = null;
 
@@ -167,6 +169,7 @@ namespace Sirrene
         }
         public async void StartRec()
         {
+            cookiecontainer = null;
             try
             {
                 if (props.IsLogin == IsLogin.always)
@@ -191,6 +194,7 @@ namespace Sirrene
                                         {
                                             //ログインしていればOK
                                             AddLog("Already logged in", 1);
+                                            cookiecontainer = _nvn.GetCookieContainer();
                                             break;
                                         }
                                     }
@@ -211,11 +215,13 @@ namespace Sirrene
                                     {
                                         AddLog("Login OK", 1);
                                         db.SetSession(alias, _nvn.GetCookieContainer());
+                                        cookiecontainer = _nvn.GetCookieContainer();
                                     }
                                 }
                                 else
                                 {
                                     AddLog("Already logged in", 1);
+                                    cookiecontainer = _nvn.GetCookieContainer();
                                 }
                             }
                             break;
@@ -235,7 +241,8 @@ namespace Sirrene
                                 AddLog("ブラウザでログインし直してください", 1);
                                 return;
                             }
-*/
+                            Cookie = _nvn.GetCookieContainer();
+ */
                             break;
                     } //switch
                 }
@@ -248,40 +255,57 @@ namespace Sirrene
                 string err;
                 int neterr;
                 using (var _nvn = new NicoVideoNet())
+                {
+                    _nvn.SetCookieContainer(cookiecontainer);
                     (dataJson, err, neterr) = await _nvn.GetNicoPageAsync(videoId);
+                }
                 if (err != null)
                 {
                     AddLog("この動画は存在しないか、削除された可能性があります。 (" + err + ")", 1);
                     return;
                 }
-                //AddLog("Account: " + bci.AccountType, 1);
                 AddDataJson(dataJson.ToString());
+                var djs = new DataJson(videoId);
+                djs.GetData(dataJson);
+                if (djs.IsPremium)
+                        AddLog("Premium Account", 1);
+                    else
+                        AddLog("Normal Account", 1);
+                if (djs.IsPeakTime)
+                    AddLog("PeakTime", 1);
+                else
+                    AddLog("No PeakTime", 1);
+                if (djs.IsEconomy)
+                    AddLog("Economy Time", 1);
+                else
+                    AddLog("No Economy Time", 1);
+                if (!djs.IsWatchVideo)
+                    AddLog("Can't Watch Video", 1);
+
                 //保存ファイル名作成
                 epi = new ExecPsInfo();
                 epi.Sdir = string.IsNullOrEmpty(props.SaveDir) ? System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : props.SaveDir;
                 epi.Exec = GetExecFile(props.ExecFile[0]);
                 epi.Arg = props.ExecCommand[0];
-                //epi.Sfile = bci.SetRecFileFormat(props.SaveFile);
-                //epi.Sfolder = bci.SetRecFolderFormat(props.SaveFolder);
-                epi.Sfile = props.SaveFile;
-                epi.Sfolder = props.SaveFolder;
+                epi.Sfile = djs.SetRecFileFormat(props.SaveFile);
+                epi.Sfolder = djs.SetRecFolderFormat(props.SaveFolder);
                 epi.Protocol = "hls";
                 epi.Seq = 0;
-                ExecPsInfo.MakeRecDir(epi);
+                //ExecPsInfo.MakeRecDir(epi);
 
-/*
-                if (props.Protocol == Protocol.hls && props.UseExternal == UseExternal.native)
+                if (props.UseExternal == UseExternal.native)
                 {
                     var file = ExecPsInfo.GetSaveFileSqlite3(epi);
-                    if (bci.IsTimeShift()) file += Props.TIMESHIFT;
                     file += ".sqlite3";
                     epi.SaveFile = file;
                     _ndb = new NicoDb(this, epi.SaveFile);
-                    _ndb.CreateDbAll();
+                    //_ndb.CreateDbAll();
 
-                    _ndb.WriteDbKvsProps(bci.Data_Props);
+                    //_ndb.WriteDbKvsProps(djs.Data_Props);
                 }
+                AddLog("File: "+epi.SaveFile, 1);
 
+/*
                 //コメント情報
                 if (props.IsComment)
                 {
@@ -295,26 +319,23 @@ namespace Sirrene
                         cctl = null;
                     _nNetComment = new NicoNetComment(this, bci, cmi, _nvn, _ndb, cctl);
                 }
+*/
+
+                // Sessionを作成
+                // Sessionを送る
+                // Sessionからcontent_uriを取得
 
                 var ri = new RetryInfo();
                 rti = ri;
-                rti.Count = props.Retry;
+                rti.Count = 3;
 
-                if (props.Protocol == Protocol.hls && props.UseExternal == UseExternal.native)
-                    _rHtml = new RecHtml(this, bci, _nNetComment, _nvn.GetCookieContainer(), _ndb, rti);
-                else
-                    _eProcess = new ExecProcess(this, bci, _nNetComment, rti);
-                _nNetStream = new NicoNetStream(this, bci, cmi, epi, _nNetComment, _eProcess, _rHtml, rti);
-
-                AddLog("webSocketUrl: " + bci.WsUrl, 9);
-                AddLog("frontendId: " + bci.FrontEndId, 9);
-                //bci.FrontEndId = "90";
+                //if (props.UseExternal == UseExternal.native)
+                //    _rHtml = new RecHtml(this, djs, cookiecontainer, _ndb, rti);
+                //else
+                //    _eProcess = new ExecProcess(this, djs, rti);
 
                 //放送情報を表示
-                DispHosoData(bci);
-
-                //WebSocket接続開始
-                _nNetStream.Connect();
+                //DispHosoData(bci);
 
                 //1秒おきに状態を調べて処理する
                 start_flg = true;
@@ -323,7 +344,7 @@ namespace Sirrene
                     //await CheckStatus();
                     await Task.Delay(1000);
                 }
-*/
+
             } // try
             catch (Exception Ex)
             {

@@ -18,7 +18,7 @@
       <Value Profile="(Default)">rec</Value>
     </Setting>
     <Setting Name="SaveFile" Type="System.String" Scope="User">
-      <Value Profile="(Default)">?PID?-?UNAME?-?TITLE?</Value>
+      <Value Profile="(Default)">%id%%TITLE%</Value>
     </Setting>
     <Setting Name="QualityType" Type="System.String" Scope="User">
       <Value Profile="(Default)">normal</Value>
