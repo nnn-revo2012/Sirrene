@@ -44,6 +44,7 @@ namespace Sirrene
         private string LogFile;
         private string LogFile2;
         private string LogFile3;
+        private string LogFile4;
 
         public Form1(string[] args)
         {
@@ -77,7 +78,7 @@ namespace Sirrene
             try
             {
                 //中断処理
-                if (button1.Text == "中断")
+                if (button1.Text == "ABORT")
                 {
                     if (_rHtml != null)
                     {
@@ -100,6 +101,7 @@ namespace Sirrene
                 LogFile = null;
                 LogFile2 = null;
                 LogFile3 = null;
+                LogFile4 = null;
 
                 //ニコニコに接続
                 ClearHosoData();
@@ -135,6 +137,7 @@ namespace Sirrene
                 LogFile = Props.GetLogfile(save_dir, videoId);
                 LogFile2 = Props.GetExecLogfile(save_dir, videoId);
                 LogFile3 = Props.GetDataJsonfile(save_dir, videoId);
+                LogFile4 = Props.GetSessionfile(save_dir, videoId);
 
                 AddLog("ダウンロード開始します。", 1);
                 AddLog(string.Format("VideoID: {0}", videoId), 1);
@@ -266,21 +269,27 @@ namespace Sirrene
                 }
                 AddDataJson(dataJson.ToString());
                 var djs = new DataJson(videoId);
-                djs.GetData(dataJson);
+                bool flg;
+                (flg, err) = djs.GetDataJson(dataJson);
+                if (!flg)
+                {
+                    AddLog("Error: GetDataJson. (" + err + ")", 1);
+                    return;
+                }
                 if (djs.IsPremium)
                         AddLog("Premium Account", 1);
                     else
                         AddLog("Normal Account", 1);
                 if (djs.IsPeakTime)
-                    AddLog("PeakTime", 1);
+                    AddLog("PeakTime(Economy Time)", 1);
                 else
-                    AddLog("No PeakTime", 1);
+                    AddLog("No PeakTime(Not Econmy Time)", 1);
                 if (djs.IsEconomy)
-                    AddLog("Economy Time", 1);
+                    AddLog("エコノミー動画をダウンロードします。", 1);
                 else
-                    AddLog("No Economy Time", 1);
+                    AddLog("通常動画をダウンロードします。", 1);
                 if (!djs.IsWatchVideo)
-                    AddLog("Can't Watch Video", 1);
+                    AddLog("動画がダウンロードできません。", 1);
 
                 //保存ファイル名作成
                 epi = new ExecPsInfo();
@@ -304,6 +313,7 @@ namespace Sirrene
                     //_ndb.WriteDbKvsProps(djs.Data_Props);
                 }
                 AddLog("File: "+epi.SaveFile, 1);
+                EnableButton(false);
 
 /*
                 //コメント情報
@@ -321,9 +331,19 @@ namespace Sirrene
                 }
 */
 
-                // Sessionを作成
-                // Sessionを送る
                 // Sessionからcontent_uriを取得
+                // Sessionを作成
+                String session = "";
+                (session, err) = djs.MakeSession(dataJson);
+                if (!string.IsNullOrEmpty(session))
+                {
+                    if (err != "")
+                    {
+                        AddLog("Error: MakeSession. (" + err + ")", 1);
+                        return;
+                    }
+                    AddSession(JObject.Parse(session).ToString());
+                }
 
                 var ri = new RetryInfo();
                 rti = ri;
@@ -342,8 +362,25 @@ namespace Sirrene
                 while (start_flg == true)
                 {
                     //await CheckStatus();
-                    await Task.Delay(1000);
+                    await Task.Delay(5000);
+                    start_flg = false;
                 }
+                if (_rHtml != null)
+                {
+                    _rHtml.BreakProcess("");
+                }
+                if (_eProcess != null)
+                {
+                    _eProcess.BreakProcess(epi.BreakKey);
+                }
+                if (_ndb != null)
+                {
+                    _ndb.Dispose();
+                }
+                AddLog("ダウンロード終了しました。", 1);
+                EnableButton(true);
+                start_flg = false;
+                return;
 
             } // try
             catch (Exception Ex)

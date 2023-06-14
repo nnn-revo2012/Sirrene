@@ -89,6 +89,18 @@ namespace Sirrene
             }));
         }
 
+        //sessionをファイルに書き込み
+        public void AddSession(string s)
+        {
+            this.Invoke(new Action(() =>
+            {
+                if (props.IsLogging && LogFile4 != null)
+                {
+                    System.IO.File.AppendAllText(LogFile4, s);
+                }
+            }));
+        }
+
         private void ClearHosoData()
         {
             this.Invoke(new Action(() =>
@@ -145,14 +157,14 @@ namespace Sirrene
                 {
                     this.textBox1.Enabled = true;
                     //this.button2.Enabled = true;
-                    this.button1.Text = "録画開始";
+                    this.button1.Text = "DOWNLOAD";
                     this.button1.Focus();
                 }
                 else
                 {
                     this.textBox1.Enabled = false;
                     //this.button2.Enabled = false;
-                    this.button1.Text = "中断";
+                    this.button1.Text = "ABORT";
                     this.button1.Focus();
                 }
             }));

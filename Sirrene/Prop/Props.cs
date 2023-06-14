@@ -293,6 +293,11 @@ namespace Sirrene.Prop
             var tmp = Path.GetFileNameWithoutExtension(filename) + "_dataJson_" + System.DateTime.Now.ToString("yyMMdd_HHmmss") + ".log";
             return Path.Combine(dir, tmp);
         }
+        public static string GetSessionfile(string dir, string filename)
+        {
+            var tmp = Path.GetFileNameWithoutExtension(filename) + "_session_" + System.DateTime.Now.ToString("yyMMdd_HHmmss") + ".log";
+            return Path.Combine(dir, tmp);
+        }
 
         public static string GetDirSepString()
         {
