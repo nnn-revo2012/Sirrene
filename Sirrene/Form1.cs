@@ -30,8 +30,9 @@ namespace Sirrene
         private RecHtml _rHtml = null;                //RecHtml
         private NicoDb _ndb = null;                   //NicoDb
 
-        //private DataApiDataInfo dadi = null;          //動画情報
-        private JObject dataJson = null;            //動画情報(JObject)
+        //private DataApiDataInfo dadi = null;        //動画情報
+        private JObject dataJson = null;              //動画情報(JObject)
+        private JObject sessionJson = null;           //セッション情報(JObject)
         private ExecPsInfo epi = null;                //実行／保存ファイル情報
         private RetryInfo rti = null;                 //リトライ情報
         private CookieContainer cookiecontainer = new CookieContainer();
@@ -331,8 +332,7 @@ namespace Sirrene
                 }
 */
 
-                // Sessionからcontent_uriを取得
-                // Sessionを作成
+                // Session作成
                 String session = "";
                 (session, err) = djs.MakeSession(dataJson);
                 if (!string.IsNullOrEmpty(session))
@@ -343,6 +343,37 @@ namespace Sirrene
                         return;
                     }
                     AddSession(JObject.Parse(session).ToString());
+                }
+                // SessionをapiにPOST
+                AddLog("Send PostSession", 1);
+                using (var _nvn = new NicoVideoNet())
+                {
+                    _nvn.SetCookieContainer(cookiecontainer);
+                    //(_, err, neterr) = await _nvn.GetNicoCrossDomainAsync(djs.Session_Url);
+                    (sessionJson, err, neterr) = await _nvn.PostNicoSessionAsync(djs.Session_Uri, session);
+                }
+                if (err != null)
+                {
+                    AddLog("Send PostSession Error: " + err + "(" + neterr + ")", 1);
+                }
+                else
+                {
+                    if (sessionJson["meta"] != null)
+                    {
+                        var msg = (string)sessionJson["meta"]["message"] +
+                            "(" + sessionJson["meta"]["status"].ToString() + ")";
+                        AddLog("Send PostSession " + msg, 1);
+                    }
+                }
+                AddSession("\r\n" + sessionJson.ToString());
+                (flg, err) = djs.GetContentUri(sessionJson);
+                if (flg)
+                {
+                    AddLog("Content_Uri: " + djs.Content_Uri, 1);
+                }
+                else
+                {
+                    AddLog("Content_Uri: " + err, 1);
                 }
 
                 var ri = new RetryInfo();

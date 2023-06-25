@@ -36,8 +36,9 @@ namespace Sirrene
         public bool IsPeakTime { set; get; }
         public bool IsEconomy { set; get; }
         public bool IsWatchVideo { set; get; }
-        public string Session_Url { set; get; }
+        public string Session_Uri { set; get; }
         public string Session_Data { set; get; }
+        public string Content_Uri { set; get; }
 
 
         public DataJson(string videoid)
@@ -51,6 +52,8 @@ namespace Sirrene
             this.IsEconomy = false;
             this.IsWatchVideo = true;
             this.Title = "";
+            this.Session_Uri = null;
+            this.Content_Uri = null;
 
         }
         public (bool result, string err) GetDataJson(JObject datajson)
@@ -154,11 +157,15 @@ namespace Sirrene
                 var recipe_id = (string)session["recipeId"];
                 var player_id = (string)session["playerId"];
                 var content_id = (string)session["contentId"];
+                var lifetime = session["heartbeatLifetime"].ToString();
+                var timeout = session["contentKeyTimeout"].ToString();
+                var priority = session["priority"].ToString();
                 var token = ((string)session["token"]).Replace("\"", "\\\"");
                 var signature = (string)session["signature"];
                 var user_id = (string)session["serviceUserId"];
                 var videos = session["videos"].ToString();
                 var audios = session["audios"].ToString();
+                this.Session_Uri = session["urls"][0]["url"].ToString();
 
                 sb.Append("{");
                 sb.Append("  \"session\": {");
@@ -184,7 +191,7 @@ namespace Sirrene
                 sb.Append("    \"timing_constraint\": \"unlimited\",");
                 sb.Append("    \"keep_method\": {");
                 sb.Append("      \"heartbeat\": {");
-                sb.Append("        \"lifetime\": 120000");
+                sb.Append("        \"lifetime\": " + lifetime);
                 sb.Append("      }");
                 sb.Append("    },");
                 sb.Append("    \"protocol\": {");
@@ -211,18 +218,20 @@ namespace Sirrene
                 sb.Append("    },");
                 sb.Append("    \"content_auth\": {");
                 sb.Append("      \"auth_type\": \"ht2\",");
-                sb.Append("      \"content_key_timeout\": 600000,");
+                sb.Append("      \"content_key_timeout\": " + timeout + ",");
                 sb.Append("      \"service_id\": \"nicovideo\",");
                 sb.Append("      \"service_user_id\": \"" + user_id + "\"");
                 sb.Append("    },");
                 sb.Append("    \"client_info\": {");
                 sb.Append("      \"player_id\": \"" + player_id + "\"");
                 sb.Append("    },");
-                //sb.Append("    \"priority\": 0.6");
+                sb.Append("    \"priority\": "+ priority);
                 sb.Append("  }");
                 sb.Append("}");
 
                 result = sb.ToString();
+                var obj = JsonConvert.DeserializeObject(result);
+                result = JsonConvert.SerializeObject(obj, Formatting.None);
             }
             catch (Exception Ex) //その他のエラー
             {
@@ -233,6 +242,34 @@ namespace Sirrene
             }
             return (result, err);
         }
+
+        public (bool result, string err) GetContentUri(JObject session_json)
+        {
+            var result = false;
+            var err = "";
+            this.Content_Uri = null;
+
+            try
+            {
+                if (session_json["data"] != null)
+                {
+                    this.Content_Uri=  (string)session_json["data"]["session"]["content_uri"];
+                    result = true;
+                }
+                else
+                {
+                    err = "content_uri not found.";
+                }
+            }
+            catch (Exception Ex) //その他のエラー
+            {
+                DebugWrite.Writeln(nameof(GetContentUri), Ex);
+                err = Ex.Message;
+                return (result, err);
+            }
+            return (result, err);
+        }
+
 
         //指定フォーマットに基づいて録画サブディレクトリー名を作る
         public string SetRecFolderFormat(string s)
