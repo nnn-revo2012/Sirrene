@@ -35,11 +35,12 @@ namespace Sirrene
         public bool IsPremium { set; get; }
         public bool IsPeakTime { set; get; }
         public bool IsEconomy { set; get; }
+        public bool IsEncrypt { set; get; }
         public bool IsWatchVideo { set; get; }
         public string Session_Uri { set; get; }
-        public string Session_Data { set; get; }
         public string Content_Uri { set; get; }
-
+        public string Heartbeat_Uri { set; get; }
+        public string Heartbeat_Data { set; get; }
 
         public DataJson(string videoid)
         {
@@ -50,16 +51,19 @@ namespace Sirrene
             this.IsPremium = false;
             this.IsPeakTime = false;
             this.IsEconomy = false;
+            this.IsEncrypt = false;
             this.IsWatchVideo = true;
             this.Title = "";
             this.Session_Uri = null;
             this.Content_Uri = null;
+            this.Heartbeat_Uri = null;
 
         }
         public (bool result, string err) GetDataJson(JObject datajson)
         {
             var result = false;
             var err = "";
+            JToken delivery = null;
 
             try
             {
@@ -87,7 +91,9 @@ namespace Sirrene
 
                 if (datajson["media"]["delivery"] != null)
                 {
-                    if (!datajson["media"]["delivery"].HasValues)
+                    if (datajson["media"]["delivery"].HasValues)
+                        delivery = datajson["media"]["delivery"];
+                    else
                         this.IsWatchVideo = false;
                 }
                 else
@@ -105,12 +111,20 @@ namespace Sirrene
                     else
                     {
                         if (IsWatchVideo)
-                            if (datajson["media"]["delivery"]["movie"] != null)
+                            if (delivery["movie"] != null)
                             {
-                                if ((bool)(datajson["media"]["delivery"]["movie"]["audios"][0]["isAvailable"]) &&
-                                    (bool)(datajson["media"]["delivery"]["movie"]["videos"][0]["isAvailable"]))
+                                if ((bool)(delivery["movie"]["audios"][0]["isAvailable"]) &&
+                                    (bool)(delivery["movie"]["videos"][0]["isAvailable"]))
                                     this.IsEconomy = false;
                             }
+                    }
+
+                if (IsWatchVideo)
+                    if (delivery["encryption"] != null &&
+                        delivery["encryption"].HasValues)
+                    {
+                        this.IsEncrypt = true;
+                        this.IsWatchVideo = false;
                     }
 
                 if (datajson["video"] != null)
@@ -254,6 +268,12 @@ namespace Sirrene
                 if (session_json["data"] != null)
                 {
                     this.Content_Uri=  (string)session_json["data"]["session"]["content_uri"];
+                    this.Heartbeat_Uri = this.Session_Uri + "/" +
+                        (string)session_json["data"]["session"]["id"] +
+                        "?_format=json&_method=PUT";
+                    var obj = JsonConvert.DeserializeObject(session_json["data"].ToString());
+                    this.Heartbeat_Data = JsonConvert.SerializeObject(obj, Formatting.None);
+
                     result = true;
                 }
                 else

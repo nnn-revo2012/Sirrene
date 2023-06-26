@@ -333,8 +333,7 @@ namespace Sirrene.Net
                 _wc.Headers.Add("Origin", "https://www.nicovideo.jp");
                 _wc.Headers.Add(HttpRequestHeader.Referer, "https://www.nicovideo.jp/");
 
-                var session_url = url + "?_format=json";
-                var result = await _wc.UploadStringTaskAsync(session_url, "POST", senddata).Timeout(_wc.timeout);
+                var result = await _wc.UploadStringTaskAsync(url, "POST", senddata).Timeout(_wc.timeout);
                 if (string.IsNullOrEmpty(result)) return (data, "result is null", neterr);
                 data = JObject.Parse(result);
             }

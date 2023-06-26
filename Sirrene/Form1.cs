@@ -289,6 +289,8 @@ namespace Sirrene
                     AddLog("エコノミー動画をダウンロードします。", 1);
                 else
                     AddLog("通常動画をダウンロードします。", 1);
+                if (djs.IsEncrypt)
+                    AddLog("暗号化された動画です。", 1);
                 if (!djs.IsWatchVideo)
                     AddLog("動画がダウンロードできません。", 1);
 
@@ -332,6 +334,26 @@ namespace Sirrene
                 }
 */
 
+                if (!djs.IsWatchVideo)
+                {
+                    if (_rHtml != null)
+                    {
+                        _rHtml.BreakProcess("");
+                    }
+                    if (_eProcess != null)
+                    {
+                        _eProcess.BreakProcess(epi.BreakKey);
+                    }
+                    if (_ndb != null)
+                    {
+                        _ndb.Dispose();
+                    }
+                    AddLog("ダウンロード終了しました。", 1);
+                    EnableButton(true);
+                    start_flg = false;
+                    return;
+                }
+
                 // Session作成
                 String session = "";
                 (session, err) = djs.MakeSession(dataJson);
@@ -350,7 +372,7 @@ namespace Sirrene
                 {
                     _nvn.SetCookieContainer(cookiecontainer);
                     //(_, err, neterr) = await _nvn.GetNicoCrossDomainAsync(djs.Session_Url);
-                    (sessionJson, err, neterr) = await _nvn.PostNicoSessionAsync(djs.Session_Uri, session);
+                    (sessionJson, err, neterr) = await _nvn.PostNicoSessionAsync(djs.Session_Uri + "?_format=json", session);
                 }
                 if (err != null)
                 {
@@ -365,11 +387,13 @@ namespace Sirrene
                         AddLog("Send PostSession " + msg, 1);
                     }
                 }
-                AddSession("\r\n" + sessionJson.ToString());
+                AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
                 (flg, err) = djs.GetContentUri(sessionJson);
                 if (flg)
                 {
                     AddLog("Content_Uri: " + djs.Content_Uri, 1);
+                    AddLog("Heartbeat_Uri: " + djs.Heartbeat_Uri, 1);
+                    //AddSession("\r\nHeartbeat:\r\n" + djs.Heartbeat_Data);
                 }
                 else
                 {
@@ -379,6 +403,29 @@ namespace Sirrene
                 var ri = new RetryInfo();
                 rti = ri;
                 rti.Count = 3;
+
+                //ハートビートテスト
+                JObject dummy = null;
+                await Task.Delay(10000);
+                using (var _nvn = new NicoVideoNet())
+                {
+                    _nvn.SetCookieContainer(cookiecontainer);
+                    (dummy, err, neterr) = await _nvn.PostNicoSessionAsync(djs.Heartbeat_Uri, djs.Heartbeat_Data);
+                }
+                if (err != null)
+                {
+                    AddLog("Send Heartbeat Error: " + err + "(" + neterr + ")", 1);
+                }
+                else
+                {
+                    if (dummy["meta"] != null)
+                    {
+                        var msg = (string)dummy["meta"]["message"] +
+                            "(" + dummy["meta"]["status"].ToString() + ")";
+                        AddLog("Send Heartbeat " + msg, 1);
+                    }
+                }
+
 
                 //if (props.UseExternal == UseExternal.native)
                 //    _rHtml = new RecHtml(this, djs, cookiecontainer, _ndb, rti);
