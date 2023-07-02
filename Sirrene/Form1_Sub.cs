@@ -170,6 +170,83 @@ namespace Sirrene
             }));
         }
 
+        private void StartExtract(string filename)
+        {
+            if (filename.IndexOf(".sqlite3") < 0) return;
+
+            try
+            {
+                //保存ファイル名作成
+                epi = new ExecPsInfo();
+                epi.Sqlite3File = filename;
+                epi.Protocol = "hls";
+                epi.Seq = 0;
+                epi.Exec = GetExecFile(props.ExecFile[0]);
+                epi.Arg = "-i - -c copy -y \"%FILE%\"";
+                epi.Ext2 = ".mp4";
+
+                //Kvsデーター読み込み
+                _ndb = new NicoDb(this, filename);
+                //var kvs = _ndb.ReadDbKvs();
+/*
+                bci = new BroadCastInfo(null, null, null, null);
+                bci.Provider_Type = kvs["providerType"];
+                bci.OnAirStatus = kvs["status"];
+                bci.Server_Time = Props.GetLongParse(kvs["serverTime"]);
+
+                //コメント情報
+                cmi = new CommentInfo("NaN");
+                cmi.OpenTime = Props.GetLongParse(kvs["openTime"]);
+                cmi.BeginTime = Props.GetLongParse(kvs["beginTime"]);
+                cmi.EndTime = Props.GetLongParse(kvs["endTime"]);
+                cmi.Offset = 0L;
+                cctl = null;
+                _nNetComment = new NicoNetComment(this, bci, cmi, _nLiveNet, _ndb, cctl);
+*/
+
+                //映像ファイル出力処理
+                if (_ndb.CountDbMedia() > 0)
+                {
+                    if (_ndb.ReadDbMedia2(epi))
+                        AddLog("映像出力終了しました。", 1);
+                    else
+                        AddLog("映像出力失敗しました。", 1);
+                }
+                else
+                {
+                    AddLog("映像データーはありません。", 1);
+                    epi.SaveFile = ExecPsInfo.GetSaveFileSqlite3Num(epi);
+                    //cmi.SaveFile = epi.SaveFile + epi.Xml;
+                }
+                //if (_ndb.CountDbComment() > 0)
+                //{
+                //    if (_ndb.ReadDbComment(cmi, bci, _nNetComment))
+                //        AddLog("コメント出力終了しました。", 1);
+                //    else
+                //        AddLog("コメント出力失敗しました。", 1);
+                //}
+                //else
+                //{
+                //    AddLog("コメントデーターはありません。", 1);
+                //}
+
+                //終了処理
+                if (_ndb != null)
+                    _ndb.Dispose();
+                //if (_nNetComment != null)
+                //    _nNetComment.Dispose();
+            }
+            catch (Exception Ex)
+            {
+                if (_ndb != null)
+                    _ndb.Dispose();
+                //if (_nNetComment != null)
+                //    _nNetComment.Dispose();
+                AddLog("出力処理エラー。\r\n" + Ex.Message, 2);
+            }
+        }
+
+
         //実行ファイルと同じフォルダにある指定ファイルのフルパスをGet
         private string GetExecFile(string file)
         {

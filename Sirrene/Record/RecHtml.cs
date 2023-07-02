@@ -173,22 +173,20 @@ namespace Sirrene.Rec
 
         private async Task HtmlRecord(string masterfile, string outfile)
         {
-            long waittime = 1300;
-            int delaytime = 800;
+            long waittime = 3000;
+            int delaytime = 1000;
 
             try
             {
                 var stime = string.Empty;
-/*
-                stime = "&start=0.0";
                 if (_ndb.CountDbMedia() > 0)
                 {
                     var lp = _ndb.GetDbMediaLastPos();
                     if (lp > 0.0)
                         stime = "&start=" + lp.ToString();
                 }
-*/
-                _form.AddExecLog("MasterFile: " + masterfile + stime + "\r\n");
+
+                _form.AddLog("MasterFile: " + masterfile + stime + "\r\n", 9);
 
                 // masterファイルをGet
                 var sw = new Stopwatch();
@@ -197,7 +195,7 @@ namespace Sirrene.Rec
                 sw.Stop();
                 if (pli.Status != "Ok" || pli.Player.Count() <= 0)
                 {
-                    _form.AddExecLog("GetMasterM3u8 Error: " + pli.Error + "\r\n");
+                    _form.AddLog("GetMasterM3u8 Error: " + pli.Error + "", 1);
                     EndPs(2); //Retry
                 }
                 var seqno = _ndb.GetDbMediaLastSeqNo();
@@ -218,7 +216,7 @@ namespace Sirrene.Rec
                     var sgi = await GetPlayerM3u8Async(pli.Player.FirstOrDefault().pUrl);
                     if (sgi.Status != "Ok" || sgi.Seg.Count() <= 0)
                     {
-                        _form.AddExecLog("GetPlayerM3u8 Error: " + sgi.Error + "\r\n");
+                        _form.AddLog("GetPlayerM3u8 Error: " + sgi.Error + "", 1);
                         EndPs(2); //Retry
                         break;
                     }
@@ -240,14 +238,14 @@ namespace Sirrene.Rec
                             if (!await GetSegmentAsync(item, pli, sgi))
                                 EndPs(2); //Retry
                             sw.Stop();
-                            _form.AddExecLog("SeqNo=" + sgi.SeqNo.ToString() + " " + sw.ElapsedMilliseconds.ToString() + "mSec\r\n");
+                            _form.AddLog("SeqNo=" + sgi.SeqNo.ToString() + " " + sw.ElapsedMilliseconds.ToString() + "mSec", 1);
                             sgi.SeqNo++;
                             sc++;
                             sgi.Position += item.ExtInfo;
                             if (PsStatus > 0) break;
                             if (sw.ElapsedMilliseconds > waittime)
                             {
-                                await Task.Delay(100);
+                                await Task.Delay(200);
                             }
                             else
                             {
@@ -264,7 +262,7 @@ namespace Sirrene.Rec
                     if (PsStatus > 0) break;
                     if (sc <= 1)
                     {
-                        _form.AddExecLog("Wait " + delaytime.ToString() + "mSec\r\n");
+                        _form.AddLog("Wait " + delaytime.ToString() + "mSec", 1);
                         await Task.Delay(delaytime);
                     }
                     pli.SeqNo = sgi.SeqNo;
@@ -300,7 +298,7 @@ namespace Sirrene.Rec
         //master.m3u8からplayer.m3u8のURLを取得
         public async Task<PlayListInfo> GetMasterM3u8Async(string url)
         {
-            _form.AddExecLog("GetMasterFile\r\n");
+            _form.AddLog("GetMasterFile", 9);
             var pli = new PlayListInfo();
             pli.Status = "Error";
             pli.Error = "PARAMERROR";
@@ -319,14 +317,14 @@ namespace Sirrene.Rec
                     int bw;
                     while ((line = sr.ReadLine()) != null) // 1行ずつ読み出し。
                     {
-                        _form.AddExecLog(line + "\r\n");
+                        _form.AddLog(line + "", 9);
                         if (line.Contains("#EXT-X-STREAM-INF"))
                         {
                             var pi = new PlayerInfo();
                             if (int.TryParse(Regex.Match(line, @"[:,]BANDWIDTH=(\d+)").Groups[1].Value, out bw))
                                 pi.Bandwidth = bw;
                             line = sr.ReadLine();
-                            _form.AddExecLog(line + "\r\n");
+                            _form.AddLog(line + "", 9);
                             if (!string.IsNullOrEmpty(line))
                             {
                                 pi.pUrl = pli.BaseUrl + line;
@@ -363,7 +361,7 @@ namespace Sirrene.Rec
         //player.m3u8からsegment情報を取得
         public async Task<SegmentInfo> GetPlayerM3u8Async(string url)
         {
-            _form.AddExecLog("GetPlayerFile\r\n");
+            _form.AddLog("GetPlayerFile", 9);
             var sgi = new SegmentInfo();
             sgi.Status = "Error";
             sgi.Error = "PARAMERROR";
@@ -382,7 +380,7 @@ namespace Sirrene.Rec
                     string line;
                     while ((line = sr.ReadLine()) != null) // 1行ずつ読み出し。
                     {
-                        _form.AddExecLog(line + "\r\n");
+                        _form.AddLog(line + "", 9);
                         var ttt = line.Split(':');
                         switch (ttt[0])
                         {
@@ -406,7 +404,7 @@ namespace Sirrene.Rec
                                 if (double.TryParse(ttt[1].Split(',')[0], out ei))
                                     sg.ExtInfo = ei;
                                 line = sr.ReadLine();
-                                _form.AddExecLog(line + "\r\n");
+                                _form.AddLog(line + "", 9);
                                 if (!string.IsNullOrEmpty(line))
                                 {
                                     sg.sFile = line.Split('?')[0];
@@ -447,7 +445,7 @@ namespace Sirrene.Rec
         //segmentファイルを取得
         public async Task<bool> GetSegmentAsync(Segment seg, PlayListInfo pli, SegmentInfo sgi)
         {
-            //_form.AddExecLog("GetSegmentFile\r\n");
+            //_form.AddLog("GetSegmentFile", 9);
             byte[] data = null;
             int ll;
             if (string.IsNullOrEmpty(seg.sUrl)) return false;
@@ -458,11 +456,11 @@ namespace Sirrene.Rec
                 if (int.TryParse(_wc.ResponseHeaders.Get("Content-Length"), out ll))
                 {
                     if (ll != data.Length)
-                        _form.AddLog("Seg " + sgi.SeqNo.ToString() + ": Size Error \r\n", 1);
+                        _form.AddLog("Seg " + sgi.SeqNo.ToString() + ": Size Error ", 1);
                 }
                 ll = data.Length;
-                //_form.AddExecLog("Input: " + seg.sUrl + "\r\n");
-                _form.AddExecLog("SeqNo=" + sgi.SeqNo.ToString() + " Size: " + data.Length.ToString() + " Content-Length: " + ll.ToString() + "\r\n");
+                //_form.AddLog("Input: " + seg.sUrl + "", 9);
+                //_form.AddLog("SeqNo=" + sgi.SeqNo.ToString() + " Size: " + data.Length.ToString() + " Content-Length: " + ll.ToString() + "", 9);
 
                 //データーをSqlite3に書き込み
                 _ndb.WriteDbMedia(seg, pli, sgi, data, ll, 0);
@@ -478,7 +476,7 @@ namespace Sirrene.Rec
                     if (errres != null)
                         errno = (int)errres.StatusCode;
                 }
-                _form.AddExecLog("GetSegment Error: " + Ex.Status.ToString() + " (" + errno + ")\r\n");
+                _form.AddLog("GetSegment Error: " + Ex.Status.ToString() + " (" + errno + ")", 1);
                 return false;
             }
             catch (Exception Ex) //その他のエラー
@@ -494,19 +492,19 @@ namespace Sirrene.Rec
         public async Task<bool> SetPlayControlAsync(string speed, PlayListInfo pli)
         {
             var result = false;
-            _form.AddExecLog("SetPlayControlAsync\r\n");
+            _form.AddLog("SetPlayControlAsync", 9);
 
             try
             {
                 var ttt = pli.MasterUrl.Split('?')[1].Split('&').FirstOrDefault(s => s.StartsWith("ht2_nicolive="));
                 var url = pli.BaseUrl + "play_control.json?" + ttt + "&play_speed="+speed;
-                _form.AddExecLog(url + "\r\n");
+                _form.AddLog(url + "", 9);
                 var str = await _wc.DownloadStringTaskAsync(url).Timeout(_wc.timeout);
                 var res = JObject.Parse(str);
                 if (res["meta"]["status"].ToString() == "200")
                     result = true;
                 //{ "meta":{ "status":200,"message":"ok"},"data":{ "play_control":{ "play_speed":0.25} } }
-                _form.AddExecLog(str + "\r\n");
+                _form.AddLog(str + "", 9);
             }
             catch (WebException Ex)
             {
@@ -518,7 +516,7 @@ namespace Sirrene.Rec
                     if (errres != null)
                         errno = (int)errres.StatusCode;
                 }
-                _form.AddExecLog("SetPlayControlAsync Error: " + Ex.Status.ToString() + " (" + errno + ")\r\n");
+                _form.AddLog("SetPlayControlAsync Error: " + Ex.Status.ToString() + " (" + errno + ")", 1);
                 return result;
             }
             catch (Exception Ex) //その他のエラー

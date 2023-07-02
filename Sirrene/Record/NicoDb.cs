@@ -66,8 +66,8 @@ namespace Sirrene.Rec
         public void CreateDbAll()
         {
             CreateDbMedia();
-            //CreateDbComment();
-            //CreateDbKvs();
+            CreateDbComment();
+            CreateDbKvs();
         }
 
         public void CreateDbMedia()
@@ -134,8 +134,7 @@ namespace Sirrene.Rec
             return true;
         }
 
-/*
-        public bool ReadDbMedia(ExecPsInfo epi, CommentInfo cmi, BroadCastInfo bci)
+        public bool ReadDbMedia(ExecPsInfo epi)
         {
             FileStream fs = null;
             var result = false;
@@ -149,7 +148,6 @@ namespace Sirrene.Rec
                     int prevbw = -1;
                     int size;
                     byte[] data;
-                    bool off_flg = true;
 
                     command.CommandText = "SELECT seqno, bandwidth, size, data FROM media\n"
                                         + "WHERE IFNULL(notfound, 0) == 0 AND data IS NOT NULL\n"
@@ -158,17 +156,11 @@ namespace Sirrene.Rec
                     using (SQLiteDataReader reader = command.ExecuteReader())
                     {
                         epi.SaveFile = ExecPsInfo.GetSaveFileSqlite3Num(epi);
-                        cmi.SaveFile = epi.SaveFile + epi.Xml;
                         fs = new FileStream(epi.SaveFile + epi.Ext, FileMode.Create);
 
                         while (reader.Read())
                         {
                             seqno = (long )reader["seqno"];
-                            if (off_flg)
-                            {
-                                cmi.Offset = bci.IsTimeShift() ? seqno * 500L : bci.Server_Time / 10L - cmi.OpenTime * 100L;
-                                off_flg = false;
-                            }
                             bw = (int )(long )reader["bandwidth"];
                             // チャンクが飛んでいる場合はファイルを分ける
                             // BANDWIDTHが変わる場合はファイルを分ける
@@ -203,7 +195,7 @@ namespace Sirrene.Rec
             return result;
         }
 
-        public bool ReadDbMedia2(ExecPsInfo epi, CommentInfo cmi, BroadCastInfo bci)
+        public bool ReadDbMedia2(ExecPsInfo epi)
         {
             //FileStream fs = null;
             var ecv = new List<ExecConvert>();
@@ -218,7 +210,6 @@ namespace Sirrene.Rec
                     int prevbw = -1;
                     int size;
                     byte[] data;
-                    bool off_flg = true;
                     string arg;
 
                     command.CommandText = "SELECT seqno, bandwidth, size, data FROM media\n"
@@ -228,7 +219,6 @@ namespace Sirrene.Rec
                     using (SQLiteDataReader reader = command.ExecuteReader())
                     {
                         epi.SaveFile = ExecPsInfo.GetSaveFileSqlite3Num(epi, epi.Ext2);
-                        cmi.SaveFile = epi.SaveFile + epi.Xml;
                         //fs = new FileStream(epi.SaveFile + epi.Ext, FileMode.Create);
                         ecv.Add(new ExecConvert(_form));
                         arg = ExecPsInfo.SetConvOption(epi, null);
@@ -237,11 +227,6 @@ namespace Sirrene.Rec
                         while (reader.Read())
                         {
                             seqno = (long)reader["seqno"];
-                            if (off_flg)
-                            {
-                                cmi.Offset = bci.IsTimeShift() ? seqno * 500L : bci.Server_Time / 10L - cmi.OpenTime * 100L;
-                                off_flg = false;
-                            }
                             bw = (int)(long)reader["bandwidth"];
                             // チャンクが飛んでいる場合はファイルを分ける
                             // BANDWIDTHが変わる場合はファイルを分ける
@@ -379,6 +364,7 @@ namespace Sirrene.Rec
             return true;
         }
 
+/*
         public bool ReadDbComment(CommentInfo cmi, BroadCastInfo bci, NicoNetComment nNetComment)
         {
             var enc = new System.Text.UTF8Encoding(false);

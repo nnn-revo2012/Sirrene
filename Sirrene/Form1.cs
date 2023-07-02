@@ -23,19 +23,16 @@ namespace Sirrene
         private static bool IsBatchMode { get; set; } //引数指定で実行か？
         //0処理待ち 1録画準備 2録画中 3再接続 4中断 5変換処理中 9終了
         private static int ProgramStatus { get; set; } //プログラム状態
-        private volatile bool start_flg = false;
+        private volatile bool IsStart_flg = false;
+        private volatile bool IsBreak_flg = false;
 
         //dispose するもの
         private ExecProcess _eProcess = null;         //Process
         private RecHtml _rHtml = null;                //RecHtml
         private NicoDb _ndb = null;                   //NicoDb
 
-        //private DataApiDataInfo dadi = null;        //動画情報
-        private JObject dataJson = null;              //動画情報(JObject)
-        private JObject sessionJson = null;           //セッション情報(JObject)
-        private ExecPsInfo epi = null;                //実行／保存ファイル情報
-        private RetryInfo rti = null;                 //リトライ情報
         private CookieContainer cookiecontainer = new CookieContainer();
+        private ExecPsInfo epi = null;                //実行／保存ファイル情報
 
         private string videoId = null;
 
@@ -81,7 +78,7 @@ namespace Sirrene
                 //中断処理
                 if (button1.Text == "ABORT")
                 {
-                    End_DL(1);
+                    IsBreak_flg = true;
                     return;
                 }
 
@@ -160,6 +157,11 @@ namespace Sirrene
         public async void Start_DL()
         {
             cookiecontainer = null;
+
+            JObject dataJson = null;              //動画情報(JObject)
+            JObject sessionJson = null;           //セッション情報(JObject)
+            RetryInfo rti = null;                 //リトライ情報
+
             try
             {
                 if (props.IsLogin == IsLogin.always)
@@ -249,7 +251,7 @@ namespace Sirrene
                     _nvn.SetCookieContainer(cookiecontainer);
                     (dataJson, err, neterr) = await _nvn.GetNicoPageAsync(videoId);
                 }
-                if (err != null)
+                if (!string.IsNullOrEmpty(err))
                 {
                     AddLog("この動画は存在しないか、削除された可能性があります。 (" + err + ")", 1);
                     return;
@@ -289,7 +291,7 @@ namespace Sirrene
                 epi.Sfolder = djs.SetRecFolderFormat(props.SaveFolder);
                 epi.Protocol = "hls";
                 epi.Seq = 0;
-                //ExecPsInfo.MakeRecDir(epi);
+                ExecPsInfo.MakeRecDir(epi);
 
                 if (props.UseExternal == UseExternal.native)
                 {
@@ -297,11 +299,11 @@ namespace Sirrene
                     file += ".sqlite3";
                     epi.SaveFile = file;
                     _ndb = new NicoDb(this, epi.SaveFile);
-                    //_ndb.CreateDbAll();
+                    _ndb.CreateDbAll();
 
                     //_ndb.WriteDbKvsProps(djs.Data_Props);
                 }
-                AddLog("File: "+epi.SaveFile, 1);
+                AddLog("File: "+epi.SaveFile, 9);
                 EnableButton(false);
 
 /*
@@ -331,9 +333,9 @@ namespace Sirrene
                 (session, err) = djs.MakeSession(dataJson);
                 if (!string.IsNullOrEmpty(session))
                 {
-                    if (err != "")
+                    if (!string.IsNullOrEmpty(err))
                     {
-                        AddLog("Error: MakeSession. (" + err + ")", 1);
+                        AddLog("MakeSession Error: " + err , 1);
                         return;
                     }
                     AddSession(JObject.Parse(session).ToString());
@@ -346,7 +348,7 @@ namespace Sirrene
                     //(_, err, neterr) = await _nvn.GetNicoCrossDomainAsync(djs.Session_Url);
                     (sessionJson, err, neterr) = await _nvn.PostNicoSessionAsync(djs.Session_Uri + "?_format=json", session);
                 }
-                if (err != null)
+                if (!string.IsNullOrEmpty(err))
                 {
                     AddLog("Send PostSession Error: " + err + "(" + neterr + ")", 1);
                 }
@@ -356,53 +358,33 @@ namespace Sirrene
                     {
                         var msg = (string)sessionJson["meta"]["message"] +
                             "(" + sessionJson["meta"]["status"].ToString() + ")";
-                        AddLog("Send PostSession " + msg, 1);
+                        AddLog("Send PostSession " + msg, 9);
                     }
                 }
                 AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
                 (flg, err) = djs.GetContentUri(sessionJson);
                 if (flg)
                 {
-                    AddLog("Content_Uri: " + djs.Content_Uri, 1);
-                    AddLog("Heartbeat_Uri: " + djs.Heartbeat_Uri, 1);
+                    AddLog("Content_Uri: " + djs.Content_Uri, 9);
+                    AddLog("Heartbeat_Uri: " + djs.Heartbeat_Uri, 9);
                     //AddSession("\r\nHeartbeat:\r\n" + djs.Heartbeat_Data);
                 }
                 else
                 {
-                    AddLog("Content_Uri: " + err, 1);
+                    AddLog("Content_Uri Error: " + err, 1);
                 }
 
                 var ri = new RetryInfo();
                 rti = ri;
                 rti.Count = 3;
 
-                //ハートビートテスト
-                JObject dummy = null;
-                await Task.Delay(10000);
-                using (var _nvn = new NicoVideoNet())
-                {
-                    _nvn.SetCookieContainer(cookiecontainer);
-                    (dummy, err, neterr) = await _nvn.PostNicoSessionAsync(djs.Heartbeat_Uri, djs.Heartbeat_Data);
-                }
-                if (err != null)
-                {
-                    AddLog("Send Heartbeat Error: " + err + "(" + neterr + ")", 1);
-                }
-                else
-                {
-                    if (dummy["meta"] != null)
-                    {
-                        var msg = (string)dummy["meta"]["message"] +
-                            "(" + dummy["meta"]["status"].ToString() + ")";
-                        AddLog("Send Heartbeat " + msg, 1);
-                    }
-                }
-
-
+                //動画ダウンロード
+                IsStart_flg = true;
+                IsBreak_flg = false;
                 if (props.UseExternal == UseExternal.native)
                 {
                     _rHtml = new RecHtml(this, djs, cookiecontainer, _ndb, rti);
-                    _rHtml.ExecPs(djs.Content_Uri, "");
+                    _rHtml.ExecPs(djs.Content_Uri, epi.SaveFile);
                 }
                 else
                 {
@@ -412,18 +394,54 @@ namespace Sirrene
                     _eProcess.ExecPs(epi.Exec, argument);
                 }
 
-                //放送情報を表示
-                //DispHosoData(bci);
-
-                //1秒おきに状態を調べて処理する
-                start_flg = true;
-                while (start_flg == true)
+                //5秒おきに状態を調べて処理する
+                JObject dummy = null;
+                int interval = 0;
+                while (IsStart_flg == true && IsBreak_flg == false)
                 {
-                    //await CheckStatus();
                     await Task.Delay(5000);
-                    start_flg = false;
+                    if (_rHtml != null && _rHtml.PsStatus > 0 ||
+                        _eProcess != null && _eProcess.PsStatus > 0)
+                    {
+                        IsStart_flg = false;
+                        break;
+                    }
+                    interval += 5;
+                    if (interval < 40)
+                        continue;
+
+                    //ハートビート
+                    interval = 0;
+                    using (var _nvn = new NicoVideoNet())
+                    {
+                        _nvn.SetCookieContainer(cookiecontainer);
+                        (dummy, err, neterr) = await _nvn.PostNicoSessionAsync(djs.Heartbeat_Uri, djs.Heartbeat_Data);
+                    }
+                    if (!string.IsNullOrEmpty(err))
+                    {
+                        AddLog("Send Heartbeat Error: " + err + "(" + neterr + ")", 1);
+                    }
+                    else
+                    {
+                        if (dummy["meta"] != null)
+                        {
+                            var msg = (string)dummy["meta"]["message"] +
+                                "(" + dummy["meta"]["status"].ToString() + ")";
+                            AddLog("Send Heartbeat " + msg, 9);
+                        }
+                    }
                 }
-                End_DL(0);
+
+                //sqlite3 -> .mp4 に変換
+                if (IsBreak_flg)
+                {
+                    End_DL(1);
+                }
+                else
+                {
+                    End_DL(0);
+                    await Task.Run(() => StartExtract(epi.SaveFile));
+                }
 
                 return;
             } // try
@@ -454,7 +472,8 @@ namespace Sirrene
                 else
                     AddLog("ダウンロード終了しました。", 1);
                 EnableButton(true);
-                start_flg = false;
+                IsStart_flg = false;
+                IsBreak_flg = false;
 
                 return;
             } // try
@@ -490,6 +509,8 @@ namespace Sirrene
             {
                 LogFile = null;
                 LogFile2 = null;
+                LogFile3 = null;
+                LogFile4 = null;
 
                 using (var fo2 = new Form2(this, accountdbfile))
                 {
@@ -499,6 +520,75 @@ namespace Sirrene
             catch (Exception Ex)
             {
                 AddLog("オプションメニューが開けませんでした。\r\n" + Ex.Message, 2);
+            }
+        }
+
+        private void 録画フォルダーを開くOToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!String.IsNullOrEmpty(props.SaveDir))
+            {
+                Process.Start(props.SaveDir);
+            }
+            else
+            {
+                Process.Start(System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            }
+        }
+
+        private async void Form1_DragDrop(object sender, DragEventArgs e)
+        {
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+
+            try
+            {
+                ClearHosoData();
+                ClearLog();
+
+                var exec_file = props.ExecFile[0];
+                exec_file = GetExecFile(exec_file);
+                if (!File.Exists(exec_file))
+                {
+                    AddLog("実行ファイルがありません。", 2);
+                    return;
+                }
+
+                var save_dir = String.IsNullOrEmpty(props.SaveDir) ? System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : props.SaveDir;
+                if (!Directory.Exists(save_dir))
+                {
+                    AddLog("保存フォルダーが存在しません。", 2);
+                    return;
+                }
+
+                LogFile = Props.GetLogfile(save_dir, "conv");
+                LogFile2 = Props.GetExecLogfile(save_dir, "conv");
+                LogFile3 = null;
+                LogFile4 = null;
+
+                for (int i = 0; i < files.Length; i++)
+                {
+                    AddLog("出力開始します。", 1);
+                    await Task.Run(() => StartExtract(files[i]));
+                }
+            }
+            catch (Exception Ex)
+            {
+                if (_ndb != null)
+                {
+                    _ndb.Dispose();
+                }
+                AddLog("ドラッグ＆ドロップできません。\r\n" + Ex.Message, 2);
+            }
+        }
+
+        private void Form1_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.All;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
             }
         }
     }

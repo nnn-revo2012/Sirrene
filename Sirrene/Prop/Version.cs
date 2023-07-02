@@ -4,8 +4,8 @@ namespace Sirrene.Prop
 {
     public class Ver
     {
-        public static readonly string Version = "0.1.0.03";
-        public static readonly string VerDate = "2023/06/26";
+        public static readonly string Version = "0.1.0.04";
+        public static readonly string VerDate = "2023/07/03";
 
         public static string GetFullVersion()
         {
