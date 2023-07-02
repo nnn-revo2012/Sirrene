@@ -22,11 +22,12 @@ namespace Sirrene.Proc
         //Debug
         public bool IsDebug { get; set; }
 
-        public ExecProcess(Form1 fo, RetryInfo ri)
+        public ExecProcess(Form1 fo, DataJson djs, RetryInfo ri)
         {
             IsDebug = false;
 
             PsStatus = -1;
+            this._djs = djs;
             this._ri = ri;
             this._form = fo;
         }
@@ -81,10 +82,6 @@ namespace Sirrene.Proc
                 PsStatus = 0; //実行中
                 //EnableButton(false);
 
-                if (Form1.props.IsComment)
-                {
- 
-                }
                 if (Form1.props.IsVideo)
                 {
                     _ps.BeginOutputReadLine();
@@ -146,12 +143,6 @@ namespace Sirrene.Proc
                 {
                     _ps.Dispose();
                     _ps = null;
-                }
-
-                //生放送の場合プロセスが終了したらコメントサーバーを切断する。
-                if (Form1.props.IsComment)
-                {
-
                 }
             }
             catch (Exception Ex)

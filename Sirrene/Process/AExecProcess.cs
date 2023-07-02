@@ -17,6 +17,7 @@ namespace Sirrene.Proc
         public volatile int PsStatus = -1; //実行ファイルの状態
 
         protected NicoDb _ndb = null;
+        protected DataJson _djs = null;
         protected RetryInfo _ri = null;
         protected Form1 _form = null;
 

@@ -79,6 +79,9 @@ namespace Sirrene.Net
 
             _wc.Encoding = Encoding.UTF8;
             _wc.Proxy = null;
+            _wc.Headers.Add(HttpRequestHeader.ContentType, "text/html; charset=UTF-8");
+            _wc.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+            _wc.Headers.Add(HttpRequestHeader.AcceptLanguage, "ja,en-US;q=0.9,en;q=0.8");
             _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
             _wc.timeout = 30000;
         }
@@ -142,10 +145,6 @@ namespace Sirrene.Net
                 ps.Add("mail_tel", mail);
                 ps.Add("password", pass);
 
-                _wc.Headers.Add(HttpRequestHeader.ContentType, "text/html; charset=UTF-8");
-                _wc.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                _wc.Headers.Add(HttpRequestHeader.AcceptLanguage, "ja,en-US;q=0.9,en;q=0.8");
-
                 byte[] resArray = await _wc.UploadValuesTaskAsync(Props.NicoLoginUrl, ps).Timeout(_wc.timeout);
                 var data = System.Text.Encoding.UTF8.GetString(resArray);
                 flag = Regex.IsMatch(data, "user\\.login_status += +\\'login\\'", RegexOptions.Compiled) ? true : false;
@@ -198,10 +197,6 @@ namespace Sirrene.Net
 
             try
             {
-                _wc.Headers.Add(HttpRequestHeader.ContentType, "text/html; charset=UTF-8");
-                _wc.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                _wc.Headers.Add(HttpRequestHeader.AcceptLanguage, "ja,en-US;q=0.9,en;q=0.8");
-
                 var hs = await _wc.DownloadStringTaskAsync(Props.NicoDomain).Timeout(_wc.timeout);
                 flag = Regex.IsMatch(hs, "user\\.login_status += +\\'login\\'", RegexOptions.Compiled) ? true : false;
             }
@@ -237,10 +232,6 @@ namespace Sirrene.Net
             {
                 var nicoid = GetVideoID(nicoUrl);
                 if (string.IsNullOrEmpty(nicoid)) return (data, "null", neterr);
-
-                _wc.Headers.Add(HttpRequestHeader.ContentType, "text/html; charset=UTF-8");
-                _wc.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                _wc.Headers.Add(HttpRequestHeader.AcceptLanguage, "ja,en-US;q=0.9,en;q=0.8");
 
                 var hs = await _wc.DownloadStringTaskAsync(Props.NicoVideoUrl + nicoid).Timeout(_wc.timeout);
                 if (string.IsNullOrEmpty(hs)) return (data, "null", neterr);
@@ -285,10 +276,6 @@ namespace Sirrene.Net
             {
                 if (string.IsNullOrEmpty(url)) return (data, "null", neterr);
 
-                _wc.Headers.Add(HttpRequestHeader.ContentType, "text/html; charset=UTF-8");
-                _wc.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                _wc.Headers.Add(HttpRequestHeader.AcceptLanguage, "ja,en-US;q=0.9,en;q=0.8");
-
                 int index = url.IndexOf("/", "https://".Length);
                 var host_url = url.Substring(0, index);
                 data = await _wc.DownloadStringTaskAsync(host_url).Timeout(_wc.timeout);
@@ -329,9 +316,8 @@ namespace Sirrene.Net
 
                 _wc.Headers.Add(HttpRequestHeader.ContentType, "application/json");
                 _wc.Headers.Add(HttpRequestHeader.Accept, "application/json");
-                _wc.Headers.Add(HttpRequestHeader.AcceptLanguage, "ja,en-US;q=0.9,en;q=0.8");
-                _wc.Headers.Add("Origin", "https://www.nicovideo.jp");
-                _wc.Headers.Add(HttpRequestHeader.Referer, "https://www.nicovideo.jp/");
+                _wc.Headers.Add("Origin", Props.NicoOrigin);
+                _wc.Headers.Add(HttpRequestHeader.Referer, Props.NicoDomain);
 
                 var result = await _wc.UploadStringTaskAsync(url, "POST", senddata).Timeout(_wc.timeout);
                 if (string.IsNullOrEmpty(result)) return (data, "result is null", neterr);

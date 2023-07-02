@@ -19,35 +19,13 @@ namespace Sirrene.Prop
         public static readonly string NicoDomain = "https://www.nicovideo.jp/";
 
         public static readonly string NicoVideoUrl = NicoDomain + "watch/";
-        public static readonly string NicoOrigin  = NicoDomain;
+        public static readonly string NicoOrigin  = "https://www.nicovideo.jp";
         public static readonly string NicoUserUrl = "https://www.nicovideo.jp/user/";
 
-        //public static readonly string NicoLoginUrl = "https://secure.nicovideo.jp/secure/login?site=niconico";
         public static readonly string NicoLoginUrl = "https://account.nicovideo.jp/login/redirector?show_button_twitter=1&site=niconico&show_button_facebook=1&next_url=%2F";
 
         public static readonly string[] Quality =
-    { "1080p", "720p", "480p", "360p", "低画質", };
-
-        public static readonly string[][] ReplaceWords =
-            {
-            new[] {"?PID?","lv1234567","ProgramId。lv1234567のような文字列。"},
-            new[] {"?UNAME?","ユーザ名","ユーザ名。公式の場合、official"},
-            new[] {"?UID?","ユーザID","ユーザID。nicovideo.jp/user/に続く数字の列。公式の場合、official"},
-            new[] {"?CNAME?","コミュニティ名","コミュニティ名。公式の場合、official"},
-            new[] {"?CID?","コミュニティID","コミュニティID。co1234のような文字列。公式の場合、official"},
-            new[] {"?TITLE?","放送タイトル","放送タイトル。"},
-            new[] {"?YEAR?","2019","年4桁(開演時刻)"},
-            new[] {"?MONTH?","09","月2桁(開演時刻)"},
-            new[] {"?DAY?","01","日2桁(開演時刻)"},
-            new[] {"?DAY8?","20190901","年4桁,月2桁,日2桁"},
-            new[] {"?DAY6?","190901","年2桁,月2桁,日2桁"},
-            new[] {"?HOUR?","18","時2桁"},
-            new[] {"?MINUTE?","31","分2桁"},
-            new[] {"?SECOND?","02","秒2桁"},
-            new[] {"?TIME6?","183102","時2桁,分2桁,秒2桁"},
-            new[] {"?TIME4?","3102","時2桁,分2桁"}
-            //new[] {"", "",""}
-            };
+            { "1080p", "720p", "480p", "360p", "低画質", };
 
         public static readonly IDictionary<string, string> PropLists =
             new Dictionary<string, string>()

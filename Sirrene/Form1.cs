@@ -22,8 +22,8 @@ namespace Sirrene
 
         private static bool IsBatchMode { get; set; } //引数指定で実行か？
         //0処理待ち 1録画準備 2録画中 3再接続 4中断 5変換処理中 9終了
-        private volatile bool start_flg = false;
         private static int ProgramStatus { get; set; } //プログラム状態
+        private volatile bool start_flg = false;
 
         //dispose するもの
         private ExecProcess _eProcess = null;         //Process
@@ -81,21 +81,7 @@ namespace Sirrene
                 //中断処理
                 if (button1.Text == "ABORT")
                 {
-                    if (_rHtml != null)
-                    {
-                        _rHtml.BreakProcess("");
-                    }
-                    if (_eProcess != null)
-                    {
-                        _eProcess.BreakProcess(epi.BreakKey);
-                    }
-                    if (_ndb != null)
-                    {
-                        _ndb.Dispose();
-                    }
-                    AddLog("中断しました。", 1);
-                    EnableButton(true);
-                    start_flg = false;
+                    End_DL(1);
                     return;
                 }
 
@@ -163,7 +149,7 @@ namespace Sirrene
                 return;
 #endif
                 //録画開始
-                Task.Run(() => StartRec());
+                Task.Run(() => Start_DL());
 
             }
             catch (Exception Ex)
@@ -171,7 +157,7 @@ namespace Sirrene
                 AddLog(nameof(Button1_Click) + "() Error: \r\n" + Ex.Message, 2);
             }
         }
-        public async void StartRec()
+        public async void Start_DL()
         {
             cookiecontainer = null;
             try
@@ -336,21 +322,7 @@ namespace Sirrene
 
                 if (!djs.IsWatchVideo)
                 {
-                    if (_rHtml != null)
-                    {
-                        _rHtml.BreakProcess("");
-                    }
-                    if (_eProcess != null)
-                    {
-                        _eProcess.BreakProcess(epi.BreakKey);
-                    }
-                    if (_ndb != null)
-                    {
-                        _ndb.Dispose();
-                    }
-                    AddLog("ダウンロード終了しました。", 1);
-                    EnableButton(true);
-                    start_flg = false;
+                    End_DL(0);
                     return;
                 }
 
@@ -427,10 +399,18 @@ namespace Sirrene
                 }
 
 
-                //if (props.UseExternal == UseExternal.native)
-                //    _rHtml = new RecHtml(this, djs, cookiecontainer, _ndb, rti);
-                //else
-                //    _eProcess = new ExecProcess(this, djs, rti);
+                if (props.UseExternal == UseExternal.native)
+                {
+                    _rHtml = new RecHtml(this, djs, cookiecontainer, _ndb, rti);
+                    _rHtml.ExecPs(djs.Content_Uri, "");
+                }
+                else
+                {
+                    _eProcess = new ExecProcess(this, djs, rti);
+                    var argument = ExecPsInfo.SetOption(epi, djs.Content_Uri, 0);
+                    //_eProcess.ExecPs(_epi.Exec, argument);
+                    _eProcess.ExecPs(epi.Exec, argument);
+                }
 
                 //放送情報を表示
                 //DispHosoData(bci);
@@ -443,6 +423,20 @@ namespace Sirrene
                     await Task.Delay(5000);
                     start_flg = false;
                 }
+                End_DL(0);
+
+                return;
+            } // try
+            catch (Exception Ex)
+            {
+                AddLog(nameof(Start_DL) + "() Error: \r\n" + Ex.Message, 2);
+            }
+        }
+
+        public void End_DL(int flag)
+        {
+            try
+            {
                 if (_rHtml != null)
                 {
                     _rHtml.BreakProcess("");
@@ -455,15 +449,18 @@ namespace Sirrene
                 {
                     _ndb.Dispose();
                 }
-                AddLog("ダウンロード終了しました。", 1);
+                if (flag == 1)
+                    AddLog("ダウンロード中断しました。", 1);
+                else
+                    AddLog("ダウンロード終了しました。", 1);
                 EnableButton(true);
                 start_flg = false;
-                return;
 
+                return;
             } // try
             catch (Exception Ex)
             {
-                AddLog(nameof(StartRec) + "() Error: \r\n" + Ex.Message, 2);
+                AddLog(nameof(End_DL) + "() Error: \r\n" + Ex.Message, 2);
             }
         }
 
