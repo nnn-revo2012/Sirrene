@@ -197,6 +197,7 @@ namespace Sirrene
                                         AddLog("Login Failed: can't read user or pass", 1);
                                         return;
                                     }
+                                    Console.WriteLine(user + ":" + pass);
                                     (flag, _, _) = await _nvn.LoginNico(props.UserID, props.Password);
                                     if (!flag)
                                     {
