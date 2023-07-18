@@ -243,10 +243,6 @@ namespace Sirrene.Rec
                             sc++;
                             sgi.Position += item.ExtInfo;
                             if (PsStatus > 0) break;
-                            //if (sw.ElapsedMilliseconds > waittime)
-                            //    await Task.Delay(200);
-                            //else
-                            //    await Task.Delay(TimeSpan.FromMilliseconds(waittime - sw.ElapsedMilliseconds));
                             await Task.Delay(200);
                         }
                         else
