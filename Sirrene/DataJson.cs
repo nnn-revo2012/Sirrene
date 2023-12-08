@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Collections.Generic;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -31,6 +32,8 @@ namespace Sirrene
         public string Community_Title { set; get; }
         public string Community_Id { set; get; }
         public string Community_Thumbnail { set; get; }
+        public string Genre { set; get; }
+        public List<string> TagList { set; get; }
         public string User_Id { set; get; }
         public bool IsPremium { set; get; }
         public bool IsPeakTime { set; get; }
@@ -54,6 +57,9 @@ namespace Sirrene
             this.IsEncrypt = false;
             this.IsWatchVideo = true;
             this.Title = "";
+            this.Description = "";
+            this.Genre = "";
+            this.TagList = new List<string>();
             this.Session_Uri = null;
             this.Content_Uri = null;
             this.Heartbeat_Uri = null;
@@ -130,11 +136,31 @@ namespace Sirrene
                 if (datajson["video"] != null)
                 {
                     this.Title = (string)datajson["video"]["title"];
+                    if (!string.IsNullOrEmpty(this.Title))
+                        this.Title = WebUtility.HtmlDecode(this.Title);
+                    this.Description = (string)datajson["video"]["description"];
+                    if (!string.IsNullOrEmpty(this.Description))
+                        this.Description = WebUtility.HtmlDecode(this.Description);
                 }
                 else
                 {
                     err = "JSON data video not found.";
                     return (result, err);
+                }
+
+                this.Genre = (string)(datajson["genre"]["label"]);
+                if (!string.IsNullOrEmpty(this.Genre))
+                    this.Genre = WebUtility.HtmlDecode(this.Genre);
+                var items = (JArray)datajson["tag"]["items"];
+                string ddd;
+                foreach (var tag in items)
+                {
+                    ddd = (string)tag["name"];
+                    if (!string.IsNullOrEmpty(ddd))
+                    {
+                        ddd = WebUtility.HtmlDecode(ddd);
+                        TagList.Add(ddd);
+                    }
                 }
 
                 result = true;
@@ -239,7 +265,7 @@ namespace Sirrene
                 sb.Append("    \"client_info\": {");
                 sb.Append("      \"player_id\": \"" + player_id + "\"");
                 sb.Append("    },");
-                sb.Append("    \"priority\": "+ priority);
+                sb.Append("    \"priority\": " + priority);
                 sb.Append("  }");
                 sb.Append("}");
 
@@ -267,7 +293,7 @@ namespace Sirrene
             {
                 if (session_json["data"] != null)
                 {
-                    this.Content_Uri=  (string)session_json["data"]["session"]["content_uri"];
+                    this.Content_Uri = (string)session_json["data"]["session"]["content_uri"];
                     this.Heartbeat_Uri = this.Session_Uri + "/" +
                         (string)session_json["data"]["session"]["id"] +
                         "?_format=json&_method=PUT";
@@ -294,76 +320,231 @@ namespace Sirrene
         //指定フォーマットに基づいて録画サブディレクトリー名を作る
         public string SetRecFolderFormat(string s)
         {
-            return SetRecFileFormat(s);
+            //return SetRecFileFormat(s, false);
+            return s;
         }
 
-        //指定フォーマットに基づいて録画ファイル名を作る
+
+        private string VideoTitle, nicoCategory, Tag, VideoID;
+        private int numTag;
+        private string[] nicoTagList;
+        private string VideoBaseName;
+
         public string SetRecFileFormat(string s)
         {
-            /*
-                        　　%LOW% →economy時 low_
-                        　　%ID% →動画ID　%LOW%がなくeconomy時 動画IDlow_
-                        　　%id% →[動画ID]　%LOW%がなくeconomy時 [動画ID]low_
-                        　　%TITLE% →動画タイトル
-                        　　%title% →全角空白を半角空白に変えた動画タイトル
-                        　　%CAT% →(もしあれば)カテゴリータグ (属性 category="1" のタグ)(半角記号を全角化)
-                        　　%cat% →全角記号を削除した%CAT%
-                        　　%TAGn% →(n+1)番めのタグ (半角記号を全角化)
-                        　　%tagn% →全角記号を削除した%TAGn%
-            */
-            String result = s;
-            try
+            VideoTitle = SafeFileName(this.Title, false);
+            Tag = this.VideoId;
+            VideoID = "[" + this.VideoId + "]";
+            VideoBaseName = VideoID + VideoTitle;
+            nicoCategory = this.Genre;
+            nicoTagList = this.TagList.ToArray();
+            numTag = this.TagList.Count;
+            //result = replaceFilenamePattern(file, true, false);
+            return VideoBaseName;
+        }
+
+        /*
+        %LOW% →economy時 low_
+        %ID% →動画ID　%LOW%がなくeconomy時 動画IDlow_
+        %id% →[動画ID]　%LOW%がなくeconomy時 [動画ID]low_
+        %TITLE% →動画タイトル
+        %title% →全角空白を半角空白に変えた動画タイトル
+        %CAT% →(もしあれば)カテゴリータグ (属性 category="1" のタグ)(半角記号を全角化)
+        %cat% →全角記号を削除した%CAT%
+        %TAGn% →(n+1)番めのタグ (半角記号を全角化)
+        %tagn% →全角記号を削除した%TAGn%
+        */
+
+        /** ConvertWorker.json 2766
+         * replaceFilenamePattern(File source)
+         * @param file
+         * @return
+         *  %ID% -> Tag, %id% -> [Tag](VideoIDと同じ) %TITLE% -> VideoTitle,
+         *  %CAT% -> もしあればカテゴリータグ, %TAG1% ->２番めの動画タグ
+         *  %TAGn% (n=2,3,...10) n+1番目のタグ
+         */
+        private FileInfo replaceFilenamePattern(FileInfo file, bool economy, bool dmc)
+        {
+            string videoFilename = file.FullName;
+            if (VideoTitle == null)
             {
-                if (result.Contains("%LOW%"))
+                string filename = file.Name;
+                // filename = filename.Replace("%title%", "").Replace("%TITLE%", "");
+                // Maybe bug, if contains
+                SetVideoTitleIfNull(filename);
+            }
+            if (nicoCategory == null)
+                nicoCategory = "";
+
+            string canonical =
+                VideoTitle.Replace("　", " ").Replace(" +", " ").Trim()
+                .Replace("．", ".");
+            string lowString = economy ? Props.LOW_PREFIX : "";
+            string surfix = videoFilename.Contains("%LOW%") ? "" : lowString;
+            videoFilename =
+                videoFilename.Replace("%ID%", Tag + surfix)  // %ID% -> 動画ID
+                .Replace("%id%", VideoID + surfix)   // %id% -> [動画ID]
+                .Replace("%LOW%", lowString)    // %LOW% -> economy時 low_
+                .Replace("%TITLE%", VideoTitle)    // %TITLE% -> 動画タイトル
+                .Replace("%title%", canonical)    // %title% -> 動画タイトル（空白大文字を空白小文字に）
+                .Replace("%CAT%", nicoCategory)        // %CAT% -> もしあればカテゴリータグ
+                .Replace("%cat%", EraseMultiByteMark(nicoCategory));    // %cat% -> 全角記号削除
+
+            for (int i = 1; i < numTag; i++)
+            {
+                string tag = nicoTagList[i];
+                videoFilename = videoFilename.Replace("%TAG" + i + "%", tag)
+                    .Replace("%tag" + i + "%", EraseMultiByteMark(tag));
+            }
+
+            FileInfo target = new FileInfo(videoFilename);
+            DirectoryInfo parent = target.Directory;
+            if (!parent.Exists)
+            {
+                parent.Create();
+                // log.Println("folder created: " + parent.FullName);
+                if (!parent.Exists)
                 {
-                    result = result.Replace("%LOW%", ReplaceWords("low_"));
-                    result = result.Replace("%ID%", ReplaceWords(this.VideoId));
-                    result = result.Replace("%id%", "[" + ReplaceWords(this.VideoId)) + "]";
+                    // log.Println("フォルダが作成できません:" + parent.FullName);
+                    // log.Println("置換失敗 " + videoFilename);
+                    target = file;
+                }
+            }
+            return target;
+        }
+
+        // ConvertWorker.json 2818
+        private string safeAsciiFileName(string str, bool is_unicode)
+        {
+            return ToSafeWindowsName(str, "SHIFT-JIS", is_unicode);
+        }
+
+        // ConvertWorker.json 5035
+        private void SetVideoTitleIfNull(string path)
+        {
+            string videoTitle = VideoTitle;
+            if (videoTitle == null)
+            {
+                videoTitle = GetTitleFromPath(path, VideoID, Tag);
+                // 過去ログ時刻を削除
+
+                string regex = "\\[" + Props.STR_FMT_REGEX + "\\]";
+                videoTitle = Regex.Replace(videoTitle, regex, "");
+                // int index = videoTitle.LastIndexOf("[");
+                // 過去ログは[YYYY/MM/DD_HH:MM:SS]が最後に付く
+                // if (index >= 0)
+                // {
+                //     videoTitle = videoTitle.Substring(0, index);
+                // }
+                //log.Println("Title<" + videoTitle + ">");
+                VideoTitle = videoTitle;
+                //SetVidTitile(tid, Tag, VideoTitle, Tag.Contains(LOW_PREFIX));
+            }
+        }
+
+        /* ConvertWorker.json 5215
+         * videoIDの位置は無関係に削除
+         * 拡張子があればその前まで
+        */
+        private string GetTitleFromPath(string path, string videoID, string tag)
+        {
+            if (path.Contains(videoID))
+            {
+                path = path.Replace(videoID, ""); // Remove videoID regardless of its position
+            }
+            else if (path.Contains(tag))
+            {
+                path = path.Replace(tag, "");
+                if (path.StartsWith("_"))
+                {
+                    path = path.Substring(1);
+                }
+            }
+            // If there's an extension, truncate until just before it
+            if (path.LastIndexOf(".") > path.LastIndexOf(Path.DirectorySeparatorChar))
+            {
+                path = path.Substring(0, path.LastIndexOf("."));
+            }
+            return path;
+        }
+
+        // ConvertWorker.json 2758
+        private void SetVidTitle(int tid, string tag, string title, bool isEco)
+        {
+            string ecoPrefix = "";
+            if (isEco || tag.Contains(Props.LOW_PREFIX))
+            {
+                ecoPrefix = Props.ECO_PREFIX;
+            }
+            //SendText("@vid" + " " + ecoPrefix + "(" + tid + ")" + tag + "_" + title);
+        }
+
+        // NicoClient.json
+        private static Regex safeFileName_SPACE = new Regex(" {2}");
+        public static string SafeFileName(string str, bool is_unicode)
+        {
+            string result;
+            if (string.IsNullOrEmpty(str))
+                return "";
+            result = WebUtility.HtmlDecode(str);
+            if (!string.IsNullOrEmpty(result))
+            {
+                // MS-DOSシステム(ffmpeg.exe)で扱える形に(UTF-8のまま)
+                result = ToSafeWindowsName(result, "SHIFT-JIS", is_unicode);
+            }
+            return result;
+        }
+
+        private static string EraseMultiByteMark(string str)
+        {
+            str = Regex.Replace(str, "[／￥？＊：｜“＜＞．＆；]", "");
+            if (string.IsNullOrEmpty(str))
+                str = "null";
+            return str;
+        }
+
+        private static string ToSafeWindowsName(string str, string encoding, bool is_unicode)
+        {
+            if (!is_unicode)
+                str = ToSafeString(str, encoding);
+            // ファイルシステムで扱える形に
+            str = str.Replace('/', '／')
+                     .Replace('\\', '￥')
+                     .Replace('?', '？')
+                     .Replace('*', '＊')
+                     .Replace(':', '：')
+                     .Replace('|', '｜')
+                     .Replace('\"', '”')
+                     .Replace('<', '＜')
+                     .Replace('>', '＞')
+                     .Replace('.', '．');
+
+            str = safeFileName_SPACE.Replace(str, " ");
+            str = str.Trim();
+            return str;
+        }
+
+        private static string ToSafeString(string str, string encoding)
+        {
+            var sb = new StringBuilder(64);
+            foreach (char c in str)
+            {
+                byte[] b = Encoding.GetEncoding(encoding).GetBytes(c.ToString());
+                int len = b.Length;
+                if (len == 1 && b[0] == '?')
+                {
+                    b[0] = (byte)'-';
+                    sb.Append("-");
                 }
                 else
                 {
-                    var low = "";
-                    if (this.IsEconomy)
-                        low = "low_";
-                    result = result.Replace("%ID%", ReplaceWords(this.VideoId) + low);
-                    result = result.Replace("%id%", "[" + ReplaceWords(this.VideoId) + "]" + low);
+                    sb.Append(c);
                 }
-                result = result.Replace("%TITLE%", ReplaceWords(this.Title));
-                result = result.Replace("%title%", ReplaceWords(this.Title.Replace("　", " ")));
-                //result = result.Replace("%CAT%", ReplaceWords(this.Provider_Id));
-                //result = result.Replace("%cat%", ReplaceWords(this.Community_Title));
-                //result = result.Replace("%TAGn%", ReplaceWords(this.Community_Id));
-                //result = result.Replace("%tagn%", ReplaceWords(this.Title));
             }
-            catch (Exception Ex) //その他のエラー
-            {
-                DebugWrite.Writeln(nameof(SetRecFileFormat), Ex);
-                return result;
-            }
-
-            return result;
-        }
-
-        private string ReplaceWords(string s)
-        {
-            var result = s.Replace("\\", "￥");
-            result = result.Replace("/", "?");
-            result = result.Replace(":", "：");
-            result = result.Replace("*", "＊");
-            result = result.Replace("?", "？");
-            result = result.Replace("\"", "”");
-            result = result.Replace("<", "＜");
-            result = result.Replace(">", "＞");
-            result = result.Replace("|", "｜");
-
-            result = result.Replace("）", ")");
-            result = result.Replace("（", "(");
-
-            //result = result.Replace("　", " ");
-            //result = result.Replace("\u3000", " ");
-
-            return result;
+            string dest = sb.ToString();
+            return dest;
         }
 
     }
+
 }

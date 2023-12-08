@@ -27,6 +27,11 @@ namespace Sirrene.Prop
         public static readonly string[] Quality =
             { "1080p", "720p", "480p", "360p", "低画質", };
 
+        public static readonly string STR_FMT_REGEX = "[0-9]{4}(／[0-3][0-9]){2}_[0-2][0-9](：[0-5][0-9]){2}";
+        public static readonly string LOW_PREFIX = "low_"; // Define LOW_PREFIX and DMC_PREFIX if needed
+        public static readonly string DMC_PREFIX = "dmc_";
+        public static readonly string ECO_PREFIX = "eco_";
+
         public static readonly IDictionary<string, string> PropLists =
             new Dictionary<string, string>()
         {

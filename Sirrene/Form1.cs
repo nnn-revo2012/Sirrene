@@ -292,6 +292,8 @@ namespace Sirrene
                 epi.Protocol = "hls";
                 epi.Seq = 0;
                 ExecPsInfo.MakeRecDir(epi);
+                AddLog("Genre: " + djs.Genre, 1);
+                AddLog("TAG(" + djs.TagList.Count + ")" , 1);
 
                 if (props.UseExternal == UseExternal.native)
                 {
