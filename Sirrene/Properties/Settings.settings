@@ -21,7 +21,7 @@
       <Value Profile="(Default)">%id%%TITLE%</Value>
     </Setting>
     <Setting Name="QualityType" Type="System.String" Scope="User">
-      <Value Profile="(Default)">normal</Value>
+      <Value Profile="(Default)">720</Value>
     </Setting>
     <Setting Name="UseExternal" Type="System.String" Scope="User">
       <Value Profile="(Default)">native</Value>

@@ -24,44 +24,21 @@ namespace Sirrene.Prop
 
         public static readonly string NicoLoginUrl = "https://account.nicovideo.jp/login/redirector?show_button_twitter=1&site=niconico&show_button_facebook=1&next_url=%2F";
 
-        public static readonly string[] Quality =
-            { "1080p", "720p", "480p", "360p", "低画質", };
+        public static readonly IDictionary<string, string> Quality =
+            new Dictionary<string, string>()
+        {
+            {"1080", "1080p"},
+            {"720",  "720p"},
+            {"540",  "540p"},
+            {"480",  "480p"},
+            {"360",  "360p"},
+            {"144",  "144p(低画質)"},
+        };
 
         public static readonly string STR_FMT_REGEX = "[0-9]{4}(／[0-3][0-9]){2}_[0-2][0-9](：[0-5][0-9]){2}";
         public static readonly string LOW_PREFIX = "low_"; // Define LOW_PREFIX and DMC_PREFIX if needed
         public static readonly string DMC_PREFIX = "dmc_";
         public static readonly string ECO_PREFIX = "eco_";
-
-        public static readonly IDictionary<string, string> PropLists =
-            new Dictionary<string, string>()
-        {
-            // "community"
-            {"comId", "community.id"}, // "co\d+"
-            // "program"
-            {"description", "program.description"}, // 放送説明
-            {"isFollowerOnly", "program.isFollowerOnly"}, // bool
-            {"isPrivate", "program.isPrivate"}, // bool
-            {"mediaServerType","program.mediaServerType"}, // "DMC"
-            {"nicoliveProgramId", "program.nicoliveProgramId"}, // "lv\d+"
-            {"openTime", "program.openTime"}, // integer
-            {"providerType", "program.providerType"}, // "community"
-            {"status", "program.status"}, //
-            {"userName", "program.supplier.name"}, // ユーザ名
-            {"userPageUrl", "program.supplier.pageUrl"}, // "https://www.nicovideo.jp/user/\d+"
-            {"title", "program.title"}, // title
-            {"vposBaseTime", "program.vposBaseTime"}, // integer
-            // "site"
-            {"serverTime", "site.serverTime"}, // integer
-            // "socialGroup"
-            {"socDescription", "socialGroup.description"}, // コミュ説明
-            {"socId", "socialGroup.id"}, // "co\d+" or "ch\d+"
-            {"socLevel", "socialGroup.level"}, // integer
-            {"socName", "socialGroup.name"}, // community name
-            {"socType", "socialGroup.type"}, // "community"
-            // "user"
-            {"accountType", "user.accountType"}, // "premium"
-            {"isLoggedIn", "user.isLoggedIn"}, // bool
-        };
 
         public bool IsDebug { get; set; }
 
@@ -89,20 +66,6 @@ namespace Sirrene.Prop
             ExecCommand = new string[2];
             BreakCommand = new string[2];
         }
-/*
-        public static int ParseProtocol(string str)
-        {
-            return (int)(Protocol)Enum.Parse(typeof(Protocol), str);
-        }
-
-        public static bool IsProtocol(string str)
-        {
-            if (string.IsNullOrEmpty(str))
-                return false;
-            else
-                return Enum.IsDefined(typeof(Protocol), str);
-        }
-*/
         public static int ParseUseExternal(string str)
         {
             return (int)(UseExternal)Enum.Parse(typeof(UseExternal), str);
@@ -115,37 +78,6 @@ namespace Sirrene.Prop
             else
                 return Enum.IsDefined(typeof(UseExternal), str);
         }
-        public static int ParseQTypes(string str)
-        {
-            var result = -1;
-            var str2 = "(" + str + ")";
-            for (var i = 0; i <= Quality.Length - 1; i++)
-            {
-                if (Quality[i].IndexOf(str2) > -1)
-                {
-                    result = i;
-                    break;
-                }
-            }
-            return result;
-        }
-
-        private static Regex RgxQType = new Regex(" \\(([\\w]+)\\)", RegexOptions.Compiled);
-        public static string EnumQTypes(int idx)
-        {
-            if (idx < 0 || idx >= Quality.Length)
-                return "";
-            return RgxQType.Match(Quality[idx]).Groups[1].Value;
-        }
-
-        public static bool IsQTypes(string str)
-        {
-            if (string.IsNullOrEmpty(str))
-                return false;
-            else
-                return ParseQTypes(str) > -1 ? true : false;
-        }
-
 
         public bool LoadData(string accountdbfile)
         {

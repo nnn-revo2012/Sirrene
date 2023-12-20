@@ -274,6 +274,101 @@ namespace Sirrene.Net
             return (data, err, neterr);
         }
 
+        public async Task<(JObject data, string err, int neterr)> PostNicoDmsSessionAsync(string url, string senddata)
+        {
+            JObject data = null;
+            string err = null;
+            int neterr = 0;
+            try
+            {
+                if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
+                if (string.IsNullOrEmpty(senddata)) return (data, "senddata is null", neterr);
+
+                _wc.Headers.Add(HttpRequestHeader.ContentType, "application/json");
+                _wc.Headers.Add(HttpRequestHeader.Accept, "application/json");
+                _wc.Headers.Add("Origin", Props.NicoOrigin);
+                _wc.Headers.Add(HttpRequestHeader.Referer, Props.NicoDomain);
+
+//X-Access-Right-Key: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI2NTgxOTMyN2RhOTZhIiwiZXhwIjoxNzAyOTkxMjMxLCJ0eXAiOiJBY2Nlc3MtUmlnaHQtS2V5IiwidmlkIjoic280MzE0NDU2NSIsInJpZCI6Im5pY292aWRlby1zbzQzMTQ0NTY1IiwiZmlkIjo2LCJ1aWQiOiIxNDIzMTk5MiIsImQiOjEzNzcsInYiOlsidmlkZW8taDI2NC0zNjBwIiwidmlkZW8taDI2NC0xNDRwIl0sImEiOlsiYXVkaW8tYWFjLTY0a2JwcyJdLCJzIjpmYWxzZSwic2giOmZhbHNlfQ.IlfMIXXeK27pjKZmHE3RJIShu6cajDHrFq1ukq9ztbJYEEE4bzwaNq0UsqenuEDhn0Gj-_aEd-pi0AY26aZpsg
+//X-Frontend-Id: 6
+//X-Frontend-Version: 0
+//X-Request-With: https://www.nicovideo.jp
+                _wc.Headers.Add("X-Frontend-Id", "6");
+                _wc.Headers.Add("X-Frontend-Version", "0");
+                _wc.Headers.Add("X-Request-With", Props.NicoDomain);
+
+                var result = await _wc.UploadStringTaskAsync(url, "POST", senddata).Timeout(_wc.timeout);
+                if (string.IsNullOrEmpty(result)) return (data, "result is null", neterr);
+                data = JObject.Parse(result);
+            }
+            catch (WebException Ex)
+            {
+                DebugWrite.WriteWebln(nameof(PostNicoDmsSessionAsync), Ex);
+                if (Ex.Status == WebExceptionStatus.ProtocolError)
+                {
+                    HttpWebResponse errres = (HttpWebResponse)Ex.Response;
+                    neterr = (int)errres.StatusCode;
+                    err = neterr.ToString() + " " + errres.StatusDescription;
+                }
+                else
+                    err = Ex.Message;
+                return (data, err, neterr);
+            }
+            catch (Exception Ex) //その他のエラー
+            {
+                DebugWrite.Writeln(nameof(PostNicoDmsSessionAsync), Ex);
+                err = Ex.Message;
+                return (data, err, neterr);
+            }
+
+            return (data, err, neterr);
+        }
+
+        public async Task<(JObject data, string err, int neterr)> PostNicoCommentAsync(string url, string senddata)
+        {
+            JObject data = null;
+            string err = null;
+            int neterr = 0;
+            try
+            {
+                if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
+                if (string.IsNullOrEmpty(senddata)) return (data, "senddata is null", neterr);
+
+                _wc.Headers.Add(HttpRequestHeader.ContentType, "application/json");
+                _wc.Headers.Add(HttpRequestHeader.Accept, "application/json");
+                _wc.Headers.Add("Origin", Props.NicoOrigin);
+                _wc.Headers.Add(HttpRequestHeader.Referer, Props.NicoDomain);
+
+                _wc.Headers.Add("X-Frontend-Id", "6");
+                _wc.Headers.Add("X-Frontend-Version", "0");
+
+                var result = await _wc.UploadStringTaskAsync(url, "POST", senddata).Timeout(_wc.timeout);
+                if (string.IsNullOrEmpty(result)) return (data, "result is null", neterr);
+                data = JObject.Parse(result);
+            }
+            catch (WebException Ex)
+            {
+                DebugWrite.WriteWebln(nameof(PostNicoCommentAsync), Ex);
+                if (Ex.Status == WebExceptionStatus.ProtocolError)
+                {
+                    HttpWebResponse errres = (HttpWebResponse)Ex.Response;
+                    neterr = (int)errres.StatusCode;
+                    err = neterr.ToString() + " " + errres.StatusDescription;
+                }
+                else
+                    err = Ex.Message;
+                return (data, err, neterr);
+            }
+            catch (Exception Ex) //その他のエラー
+            {
+                DebugWrite.Writeln(nameof(PostNicoCommentAsync), Ex);
+                err = Ex.Message;
+                return (data, err, neterr);
+            }
+
+            return (data, err, neterr);
+        }
+
         public async Task<(string data, string err, int neterr)> GetNicoCrossDomainAsync(string url)
         {
             string data = null;
@@ -303,7 +398,7 @@ namespace Sirrene.Net
             }
             catch (Exception Ex) //その他のエラー
             {
-                DebugWrite.Writeln(nameof(GetNicoPageAsync), Ex);
+                DebugWrite.Writeln(nameof(GetNicoCrossDomainAsync), Ex);
                 err = Ex.Message;
                 return (data, err, neterr);
             }
@@ -311,7 +406,7 @@ namespace Sirrene.Net
             return (data, err, neterr);
         }
 
-        public async Task<(JObject data, string err, int neterr)> PostNicoSessionAsync(string url, string senddata)
+        public async Task<(JObject data, string err, int neterr)> PostNicoDmcSessionAsync(string url, string senddata)
         {
             JObject data = null;
             string err = null;
@@ -332,7 +427,7 @@ namespace Sirrene.Net
             }
             catch (WebException Ex)
             {
-                DebugWrite.WriteWebln(nameof(PostNicoSessionAsync), Ex);
+                DebugWrite.WriteWebln(nameof(PostNicoDmcSessionAsync), Ex);
                 if (Ex.Status == WebExceptionStatus.ProtocolError)
                 {
                     HttpWebResponse errres = (HttpWebResponse)Ex.Response;
@@ -345,7 +440,7 @@ namespace Sirrene.Net
             }
             catch (Exception Ex) //その他のエラー
             {
-                DebugWrite.Writeln(nameof(GetNicoPageAsync), Ex);
+                DebugWrite.Writeln(nameof(PostNicoDmcSessionAsync), Ex);
                 err = Ex.Message;
                 return (data, err, neterr);
             }

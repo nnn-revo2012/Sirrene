@@ -445,49 +445,6 @@ namespace Sirrene.Rec
             }
         }
 
-        public bool WriteDbKvsProps(string data_props)
-        {
-            try
-            {
-                var datap = JObject.Parse(data_props);
-                var ttt = string.Empty;
-
-                foreach (var item in Props.PropLists)
-                {
-                    ttt = (string)datap.SelectToken(item.Value);
-                    if (item.Key == "beginTime" || item.Key == "endTime" ||
-                        item.Key == "openTime" || item.Key == "serverTime" ||
-                        item.Key == "socLevel" || item.Key == "vposBaseTime")
-                    {
-                        double ddd;
-                        if (double.TryParse(ttt, out ddd))
-                            WriteDbKvs(item.Key, System.Data.DbType.Double, ddd);
-                    }
-                    else if (item.Key == "isFollowerOnly" || item.Key == "isPrivate" || item.Key == "isLoggedIn")
-                    {
-                        if (ttt != null)
-                            WriteDbKvs(item.Key, System.Data.DbType.Int32, (int )datap.SelectToken(item.Value));
-                    }
-                    else
-                    {
-                        if (ttt != null)
-                            WriteDbKvs(item.Key, System.Data.DbType.String, ttt);
-                    }
-
-                }
-                ttt = (string)datap.SelectToken(Props.PropLists["userPageUrl"]);
-                //if (ttt != null)
-                //    WriteDbKvs("userId", System.Data.DbType.String, Props.GetChNo(ttt));
-
-            }
-            catch (Exception Ex)
-            {
-                DebugWrite.Writeln(nameof(WriteDbKvsProps), Ex);
-                return false;
-            }
-            return true;
-        }
-
         public bool WriteDbKvs(string key, System.Data.DbType dbtype, object data)
         {
             try

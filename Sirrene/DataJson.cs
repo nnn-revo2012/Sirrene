@@ -174,7 +174,7 @@ namespace Sirrene
             }
         }
 
-        public (string result, string err) MakeSession(JObject datajson)
+        public (string result, string err) MakeDmcSession(JObject datajson)
         {
             var result = "";
             var err = "";
@@ -275,7 +275,7 @@ namespace Sirrene
             }
             catch (Exception Ex) //その他のエラー
             {
-                DebugWrite.Writeln(nameof(MakeSession), Ex);
+                DebugWrite.Writeln(nameof(MakeDmcSession), Ex);
                 err = Ex.Message;
                 result = sb.ToString();
                 return (result, err);
@@ -283,7 +283,7 @@ namespace Sirrene
             return (result, err);
         }
 
-        public (bool result, string err) GetContentUri(JObject session_json)
+        public (bool result, string err) GetDmcContentUri(JObject session_json)
         {
             var result = false;
             var err = "";
@@ -309,7 +309,7 @@ namespace Sirrene
             }
             catch (Exception Ex) //その他のエラー
             {
-                DebugWrite.Writeln(nameof(GetContentUri), Ex);
+                DebugWrite.Writeln(nameof(GetDmcContentUri), Ex);
                 err = Ex.Message;
                 return (result, err);
             }

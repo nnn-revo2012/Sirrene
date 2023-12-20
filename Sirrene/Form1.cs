@@ -332,23 +332,23 @@ namespace Sirrene
 
                 // Session作成
                 String session = "";
-                (session, err) = djs.MakeSession(dataJson);
+                (session, err) = djs.MakeDmcSession(dataJson);
                 if (!string.IsNullOrEmpty(session))
                 {
                     if (!string.IsNullOrEmpty(err))
                     {
-                        AddLog("MakeSession Error: " + err , 1);
+                        AddLog("MakeDmcSession Error: " + err , 1);
                         return;
                     }
                     AddSession(JObject.Parse(session).ToString());
                 }
                 // SessionをapiにPOST
-                AddLog("Send PostSession", 1);
+                AddLog("Send PostDmcSession", 1);
                 using (var _nvn = new NicoVideoNet())
                 {
                     _nvn.SetCookieContainer(cookiecontainer);
                     //(_, err, neterr) = await _nvn.GetNicoCrossDomainAsync(djs.Session_Url);
-                    (sessionJson, err, neterr) = await _nvn.PostNicoSessionAsync(djs.Session_Uri + "?_format=json", session);
+                    (sessionJson, err, neterr) = await _nvn.PostNicoDmcSessionAsync(djs.Session_Uri + "?_format=json", session);
                 }
                 if (!string.IsNullOrEmpty(err))
                 {
@@ -364,7 +364,7 @@ namespace Sirrene
                     }
                 }
                 AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
-                (flg, err) = djs.GetContentUri(sessionJson);
+                (flg, err) = djs.GetDmcContentUri(sessionJson);
                 if (flg)
                 {
                     AddLog("Content_Uri: " + djs.Content_Uri, 9);
@@ -417,7 +417,7 @@ namespace Sirrene
                     using (var _nvn = new NicoVideoNet())
                     {
                         _nvn.SetCookieContainer(cookiecontainer);
-                        (dummy, err, neterr) = await _nvn.PostNicoSessionAsync(djs.Heartbeat_Uri, djs.Heartbeat_Data);
+                        (dummy, err, neterr) = await _nvn.PostNicoDmcSessionAsync(djs.Heartbeat_Uri, djs.Heartbeat_Data);
                     }
                     if (!string.IsNullOrEmpty(err))
                     {
