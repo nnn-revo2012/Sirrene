@@ -31,7 +31,8 @@ namespace Sirrene
         private RecHtml _rHtml = null;                //RecHtml
         private NicoDb _ndb = null;                   //NicoDb
 
-        private CookieContainer cookiecontainer = new CookieContainer();
+        private CookieContainer cookiecontainer = null;
+        private NicoVideoNet nvn = null;
         private ExecPsInfo epi = null;                //実行／保存ファイル情報
 
         private string videoId = null;
@@ -156,12 +157,13 @@ namespace Sirrene
         }
         public async void Start_DL()
         {
-            cookiecontainer = null;
+            cookiecontainer = new CookieContainer();
 
             JObject dataJson = null;              //動画情報(JObject)
             JObject sessionJson = null;           //セッション情報(JObject)
             RetryInfo rti = null;                 //リトライ情報
 
+            nvn = new NicoVideoNet();
             try
             {
                 if (props.IsLogin == IsLogin.always)
@@ -171,22 +173,20 @@ namespace Sirrene
                     switch (props.LoginMethod.ToString())
                     {
                         case "login":
-                            using (var _nvn = new NicoVideoNet())
                             using (var db = new Prop.Account(accountdbfile))
                             {
                                 var alias = "nico_01";
                                 string user = null; string pass = null;
-                                if (!_nvn.IsLoginStatus)
+                                if (!nvn.IsLoginStatus)
                                 {
-                                    if (db.GetSession(alias, _nvn.GetCookieContainer()))
+                                    if (db.GetSession(alias, cookiecontainer))
                                     {
                                         //ニコニコにアクセスする
-                                        (flag, _, _) = await _nvn.IsLoginNicoAsync();
+                                        (flag, _, _) = await nvn.IsLoginNicoAsync(cookiecontainer);
                                         if (flag)
                                         {
                                             //ログインしていればOK
                                             AddLog("Already logged in", 1);
-                                            cookiecontainer = _nvn.GetCookieContainer();
                                             break;
                                         }
                                     }
@@ -197,7 +197,7 @@ namespace Sirrene
                                         AddLog("Login Failed: can't read user or pass", 1);
                                         return;
                                     }
-                                    (flag, _, _) = await _nvn.LoginNico(props.UserID, props.Password);
+                                    (flag, _, _) = await nvn.LoginNico(cookiecontainer, props.UserID, props.Password);
                                     if (!flag)
                                     {
                                         AddLog("Login Failed: login error", 1);
@@ -206,14 +206,12 @@ namespace Sirrene
                                     else
                                     {
                                         AddLog("Login OK", 1);
-                                        db.SetSession(alias, _nvn.GetCookieContainer());
-                                        cookiecontainer = _nvn.GetCookieContainer();
+                                        db.SetSession(alias, cookiecontainer);
                                     }
                                 }
                                 else
                                 {
                                     AddLog("Already logged in", 1);
-                                    cookiecontainer = _nvn.GetCookieContainer();
                                 }
                             }
                             break;
@@ -246,11 +244,7 @@ namespace Sirrene
                 //動画情報を取得する
                 string err;
                 int neterr;
-                using (var _nvn = new NicoVideoNet())
-                {
-                    _nvn.SetCookieContainer(cookiecontainer);
-                    (dataJson, err, neterr) = await _nvn.GetNicoPageAsync(videoId);
-                }
+                (dataJson, err, neterr) = await nvn.GetNicoPageAsync(cookiecontainer, videoId);
                 if (!string.IsNullOrEmpty(err))
                 {
                     AddLog("この動画は存在しないか、削除された可能性があります。 (" + err + ")", 1);
@@ -344,12 +338,7 @@ namespace Sirrene
                 }
                 // SessionをapiにPOST
                 AddLog("Send PostDmcSession", 1);
-                using (var _nvn = new NicoVideoNet())
-                {
-                    _nvn.SetCookieContainer(cookiecontainer);
-                    //(_, err, neterr) = await _nvn.GetNicoCrossDomainAsync(djs.Session_Url);
-                    (sessionJson, err, neterr) = await _nvn.PostNicoDmcSessionAsync(djs.Session_Uri + "?_format=json", session);
-                }
+                (sessionJson, err, neterr) = await nvn.PostNicoDmcSessionAsync(cookiecontainer, djs.Session_Uri + "?_format=json", session);
                 if (!string.IsNullOrEmpty(err))
                 {
                     AddLog("Send PostSession Error: " + err + "(" + neterr + ")", 1);
@@ -414,11 +403,7 @@ namespace Sirrene
 
                     //ハートビート
                     interval = 0;
-                    using (var _nvn = new NicoVideoNet())
-                    {
-                        _nvn.SetCookieContainer(cookiecontainer);
-                        (dummy, err, neterr) = await _nvn.PostNicoDmcSessionAsync(djs.Heartbeat_Uri, djs.Heartbeat_Data);
-                    }
+                    (dummy, err, neterr) = await nvn.PostNicoDmcSessionAsync(cookiecontainer, djs.Heartbeat_Uri, djs.Heartbeat_Data);
                     if (!string.IsNullOrEmpty(err))
                     {
                         AddLog("Send Heartbeat Error: " + err + "(" + neterr + ")", 1);

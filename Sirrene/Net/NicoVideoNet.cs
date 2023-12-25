@@ -36,13 +36,8 @@ namespace Sirrene.Net
         }
     }
 
-    public class NicoVideoNet : IDisposable
+    public class NicoVideoNet
     {
-
-        private bool disposedValue = false; // 重複する呼び出しを検知するには
-
-        private WebClientEx _wc = null;
-
         private class WebClientEx : WebClient
         {
             public CookieContainer cookieContainer = new CookieContainer();
@@ -73,41 +68,28 @@ namespace Sirrene.Net
             IsDebug = false;
 
             IsLoginStatus = false;
-
-            var wc = new WebClientEx();
-            _wc = wc;
-
-            _wc.Encoding = Encoding.UTF8;
-            _wc.Proxy = null;
-            _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
-            _wc.timeout = 30000;
         }
 
-        ~NicoVideoNet()
-        {
-            this.Dispose();
-        }
-
-
-        public IList<KeyValuePair<string, string>> GetCookieList()
+        private IList<KeyValuePair<string, string>> GetCookieList(WebClientEx wc)
         {
             var result = new Dictionary<string, string>();
-            var cc = _wc.cookieContainer;
+            var cc = wc.cookieContainer;
 
             foreach (Cookie ck in cc.GetCookies(new Uri(Props.NicoDomain)))
                 result.Add(ck.Name.ToString(), ck.Value.ToString());
 
             return result.ToList();
         }
-        public CookieContainer GetCookieContainer()
+
+        private CookieContainer GetCookieContainer(WebClientEx wc)
         {
-            return _wc.cookieContainer;
+            return wc.cookieContainer;
         }
 
-        public void SetCookieContainer(CookieContainer cookie)
+        private void SetCookieContainer(WebClientEx wc, CookieContainer cookie)
         {
             if (cookie != null)
-                _wc.cookieContainer = cookie;
+                wc.cookieContainer = cookie;
             return;
         }
         //*************** URL系 *******************
@@ -130,19 +112,25 @@ namespace Sirrene.Net
         //*************** HTTP系 *******************
 
         //ニコニコにログイン
-        public async Task<(bool flag, string err, int neterr)> LoginNico(string mail, string pass)
+        public async Task<(bool flag, string err, int neterr)> LoginNico(CookieContainer cookie, string mail, string pass)
         {
             bool flag = false;
             string err = null;
             int neterr = 0;
 
+            var _wc = new WebClientEx();
             try {
+                _wc.Encoding = Encoding.UTF8;
+                _wc.Proxy = null;
+                _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
+                _wc.timeout = 30000;
+                _wc.Headers.Add(HttpRequestHeader.ContentType, "application/x-www-form-urlencoded");
+                SetCookieContainer(_wc, cookie);
+
                 var ps = new NameValueCollection();
                 //ログイン認証(POST)
                 ps.Add("mail_tel", mail);
                 ps.Add("password", pass);
-
-                _wc.Headers.Add(HttpRequestHeader.ContentType, "application/x-www-form-urlencoded");
 
                 byte[] resArray = await _wc.UploadValuesTaskAsync(Props.NicoLoginUrl, ps).Timeout(_wc.timeout);
                 var data = System.Text.Encoding.UTF8.GetString(resArray);
@@ -175,32 +163,46 @@ namespace Sirrene.Net
                 }
                 else
                     err = Ex.Message;
-                return (flag, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(LoginNico), Ex);
                 err = Ex.Message;
-                return (flag, err, neterr);
+            }
+            finally
+            {
+                cookie = GetCookieContainer(_wc);
+                _wc?.Dispose();
             }
 
             return (flag, err, neterr);
         }
 
         //ログインしているかどうか取得
-        public async Task<(bool flag, string err, int neterr)> IsLoginNicoAsync()
+        public async Task<(bool flag, string err, int neterr)> IsLoginNicoAsync(CookieContainer cookie)
         {
             bool flag = false;
             string err = null;
             int neterr = 0;
 
+            var _wc = new WebClientEx();
             try
             {
+                _wc.Encoding = Encoding.UTF8;
+                _wc.Proxy = null;
+                _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
+                _wc.timeout = 30000;
                 _wc.Headers.Add(HttpRequestHeader.ContentType, "text/html; charset=UTF-8");
                 _wc.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
                 _wc.Headers.Add(HttpRequestHeader.AcceptLanguage, "ja,en-US;q=0.9,en;q=0.8");
+                SetCookieContainer(_wc, cookie);
 
                 var hs = await _wc.DownloadStringTaskAsync(Props.NicoDomain).Timeout(_wc.timeout);
+                if (string.IsNullOrEmpty(hs))
+                {
+                    _wc?.Dispose();
+                    return (false, "result is null", neterr);
+                }
                 flag = Regex.IsMatch(hs, "user\\.login_status += +\\'login\\'", RegexOptions.Compiled) ? true : false;
             }
             catch (WebException Ex)
@@ -214,41 +216,60 @@ namespace Sirrene.Net
                 }
                 else
                     err = Ex.Message;
-                return (flag, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(IsLoginNicoAsync), Ex);
                 err = Ex.Message;
-                return (flag, err, neterr);
             }
-            return (flag, err, neterr);            
+            finally
+            {
+                _wc?.Dispose();
+            }
+            return (flag, err, neterr);
         }
 
         //動画ページから動画情報を取得
-        public async Task<(JObject data, string err, int neterr)> GetNicoPageAsync(string nicoUrl)
+        public async Task<(JObject data, string err, int neterr)> GetNicoPageAsync(CookieContainer cookie, string nicoUrl)
         {
             JObject data = null;
             string err = null;
             int neterr = 0;
+
+            var nicoid = GetVideoID(nicoUrl);
+            if (string.IsNullOrEmpty(nicoid)) return (data, "nicoid is null", neterr);
+
+            var _wc = new WebClientEx();
             try
             {
-                var nicoid = GetVideoID(nicoUrl);
-                if (string.IsNullOrEmpty(nicoid)) return (data, "null", neterr);
-
+                _wc.Encoding = Encoding.UTF8;
+                _wc.Proxy = null;
+                _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
+                _wc.timeout = 30000;
                 _wc.Headers.Add(HttpRequestHeader.ContentType, "text/html; charset=UTF-8");
                 _wc.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
                 _wc.Headers.Add(HttpRequestHeader.AcceptLanguage, "ja,en-US;q=0.9,en;q=0.8");
+                SetCookieContainer(_wc, cookie);
 
                 var hs = await _wc.DownloadStringTaskAsync(Props.NicoVideoUrl + nicoid).Timeout(_wc.timeout);
-                if (string.IsNullOrEmpty(hs)) return (data, "null", neterr);
+                if (string.IsNullOrEmpty(hs))
+                {
+                    _wc?.Dispose();
+                     return (data, "result is null", neterr);
+                }
                 var ttt = WebUtility.HtmlDecode(Regex.Match(hs, "data-api-data=\"([^\"]*)\"", RegexOptions.Compiled).Groups[1].Value);
                 if (string.IsNullOrEmpty(ttt))
                 {
                     if (hs.IndexOf("window.NicoGoogleTagManagerDataLayer = [];") > 0)
+                    {
+                        _wc?.Dispose();
                         return (data, "Not login and not found data-api-data. Need login.", 0);
+                    }
                     else
+                    {
+                        _wc?.Dispose();
                         return (data, "Not found data-api-data", 0);
+                    }
                 }
                 data = JObject.Parse(ttt.Replace("&quot", "\""));
             }
@@ -263,42 +284,55 @@ namespace Sirrene.Net
                 }
                 else
                     err = Ex.Message;
-                return (data, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(GetNicoPageAsync), Ex);
                 err = Ex.Message;
-                return (data, err, neterr);
+            }
+            finally
+            {
+                _wc?.Dispose();
             }
             return (data, err, neterr);
         }
 
-        public async Task<(JObject data, string err, int neterr)> PostNicoDmsSessionAsync(string url, string senddata)
+        public async Task<(JObject data, string err, int neterr)> PostNicoDmsSessionAsync(CookieContainer cookie, string url, string senddata)
         {
             JObject data = null;
             string err = null;
             int neterr = 0;
+
+            if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
+            if (string.IsNullOrEmpty(senddata)) return (data, "senddata is null", neterr);
+
+            var _wc = new WebClientEx();
             try
             {
-                if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
-                if (string.IsNullOrEmpty(senddata)) return (data, "senddata is null", neterr);
-
+                _wc.Encoding = Encoding.UTF8;
+                _wc.Proxy = null;
+                _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
+                _wc.timeout = 30000;
                 _wc.Headers.Add(HttpRequestHeader.ContentType, "application/json");
                 _wc.Headers.Add(HttpRequestHeader.Accept, "application/json");
                 _wc.Headers.Add("Origin", Props.NicoOrigin);
                 _wc.Headers.Add(HttpRequestHeader.Referer, Props.NicoDomain);
+                SetCookieContainer(_wc, cookie);
 
-//X-Access-Right-Key: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI2NTgxOTMyN2RhOTZhIiwiZXhwIjoxNzAyOTkxMjMxLCJ0eXAiOiJBY2Nlc3MtUmlnaHQtS2V5IiwidmlkIjoic280MzE0NDU2NSIsInJpZCI6Im5pY292aWRlby1zbzQzMTQ0NTY1IiwiZmlkIjo2LCJ1aWQiOiIxNDIzMTk5MiIsImQiOjEzNzcsInYiOlsidmlkZW8taDI2NC0zNjBwIiwidmlkZW8taDI2NC0xNDRwIl0sImEiOlsiYXVkaW8tYWFjLTY0a2JwcyJdLCJzIjpmYWxzZSwic2giOmZhbHNlfQ.IlfMIXXeK27pjKZmHE3RJIShu6cajDHrFq1ukq9ztbJYEEE4bzwaNq0UsqenuEDhn0Gj-_aEd-pi0AY26aZpsg
-//X-Frontend-Id: 6
-//X-Frontend-Version: 0
-//X-Request-With: https://www.nicovideo.jp
+                //X-Access-Right-Key: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI2NTgxOTMyN2RhOTZhIiwiZXhwIjoxNzAyOTkxMjMxLCJ0eXAiOiJBY2Nlc3MtUmlnaHQtS2V5IiwidmlkIjoic280MzE0NDU2NSIsInJpZCI6Im5pY292aWRlby1zbzQzMTQ0NTY1IiwiZmlkIjo2LCJ1aWQiOiIxNDIzMTk5MiIsImQiOjEzNzcsInYiOlsidmlkZW8taDI2NC0zNjBwIiwidmlkZW8taDI2NC0xNDRwIl0sImEiOlsiYXVkaW8tYWFjLTY0a2JwcyJdLCJzIjpmYWxzZSwic2giOmZhbHNlfQ.IlfMIXXeK27pjKZmHE3RJIShu6cajDHrFq1ukq9ztbJYEEE4bzwaNq0UsqenuEDhn0Gj-_aEd-pi0AY26aZpsg
+                //X-Frontend-Id: 6
+                //X-Frontend-Version: 0
+                //X-Request-With: https://www.nicovideo.jp
                 _wc.Headers.Add("X-Frontend-Id", "6");
                 _wc.Headers.Add("X-Frontend-Version", "0");
                 _wc.Headers.Add("X-Request-With", Props.NicoDomain);
 
                 var result = await _wc.UploadStringTaskAsync(url, "POST", senddata).Timeout(_wc.timeout);
-                if (string.IsNullOrEmpty(result)) return (data, "result is null", neterr);
+                if (string.IsNullOrEmpty(result))
+                {
+                    _wc?.Dispose();
+                    return (data, "result is null", neterr);
+                }
                 data = JObject.Parse(result);
             }
             catch (WebException Ex)
@@ -312,38 +346,52 @@ namespace Sirrene.Net
                 }
                 else
                     err = Ex.Message;
-                return (data, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(PostNicoDmsSessionAsync), Ex);
                 err = Ex.Message;
-                return (data, err, neterr);
+            }
+            finally
+            {
+                cookie = GetCookieContainer(_wc);
+                _wc?.Dispose();
             }
 
             return (data, err, neterr);
         }
 
-        public async Task<(JObject data, string err, int neterr)> PostNicoCommentAsync(string url, string senddata)
+        public async Task<(JObject data, string err, int neterr)> PostNicoCommentAsync(CookieContainer cookie, string url, string senddata)
         {
             JObject data = null;
             string err = null;
             int neterr = 0;
+
+            if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
+            if (string.IsNullOrEmpty(senddata)) return (data, "senddata is null", neterr);
+
+            var _wc = new WebClientEx();
             try
             {
-                if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
-                if (string.IsNullOrEmpty(senddata)) return (data, "senddata is null", neterr);
-
+                _wc.Encoding = Encoding.UTF8;
+                _wc.Proxy = null;
+                _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
+                _wc.timeout = 30000;
                 _wc.Headers.Add(HttpRequestHeader.ContentType, "application/json");
                 _wc.Headers.Add(HttpRequestHeader.Accept, "application/json");
                 _wc.Headers.Add("Origin", Props.NicoOrigin);
                 _wc.Headers.Add(HttpRequestHeader.Referer, Props.NicoDomain);
+                SetCookieContainer(_wc, cookie);
 
                 _wc.Headers.Add("X-Frontend-Id", "6");
                 _wc.Headers.Add("X-Frontend-Version", "0");
 
                 var result = await _wc.UploadStringTaskAsync(url, "POST", senddata).Timeout(_wc.timeout);
-                if (string.IsNullOrEmpty(result)) return (data, "result is null", neterr);
+                if (string.IsNullOrEmpty(result))
+                {
+                    _wc?.Dispose();
+                    return (data, "result is null", neterr);
+                }
                 data = JObject.Parse(result);
             }
             catch (WebException Ex)
@@ -357,31 +405,45 @@ namespace Sirrene.Net
                 }
                 else
                     err = Ex.Message;
-                return (data, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(PostNicoCommentAsync), Ex);
                 err = Ex.Message;
-                return (data, err, neterr);
+            }
+            finally
+            {
+                _wc?.Dispose();
             }
 
             return (data, err, neterr);
         }
 
-        public async Task<(string data, string err, int neterr)> GetNicoCrossDomainAsync(string url)
+        public async Task<(string data, string err, int neterr)> GetNicoCrossDomainAsync(CookieContainer cookie, string url)
         {
             string data = null;
             string err = null;
             int neterr = 0;
+
+            if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
+
+            var _wc = new WebClientEx();
             try
             {
-                if (string.IsNullOrEmpty(url)) return (data, "null", neterr);
+                _wc.Encoding = Encoding.UTF8;
+                _wc.Proxy = null;
+                _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
+                _wc.timeout = 30000;
+                SetCookieContainer(_wc, cookie);
 
                 int index = url.IndexOf("/", "https://".Length);
                 var host_url = url.Substring(0, index);
                 data = await _wc.DownloadStringTaskAsync(host_url).Timeout(_wc.timeout);
-                if (string.IsNullOrEmpty(data)) return (data, "null", neterr);
+                if (string.IsNullOrEmpty(data))
+                {
+                    _wc?.Dispose();
+                    return (data, "result is null", neterr);
+                }
             }
             catch (WebException Ex)
             {
@@ -394,35 +456,48 @@ namespace Sirrene.Net
                 }
                 else
                     err = Ex.Message;
-                return (data, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(GetNicoCrossDomainAsync), Ex);
                 err = Ex.Message;
-                return (data, err, neterr);
+            }
+            finally
+            {
+                _wc?.Dispose();
             }
 
             return (data, err, neterr);
         }
 
-        public async Task<(JObject data, string err, int neterr)> PostNicoDmcSessionAsync(string url, string senddata)
+        public async Task<(JObject data, string err, int neterr)> PostNicoDmcSessionAsync(CookieContainer cookie, string url, string senddata)
         {
             JObject data = null;
             string err = null;
             int neterr = 0;
+
+            if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
+            if (string.IsNullOrEmpty(senddata)) return (data, "senddata is null", neterr);
+
+            var _wc = new WebClientEx();
             try
             {
-                if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
-                if (string.IsNullOrEmpty(senddata)) return (data, "senddata is null", neterr);
-
+                _wc.Encoding = Encoding.UTF8;
+                _wc.Proxy = null;
+                _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
+                _wc.timeout = 30000;
                 _wc.Headers.Add(HttpRequestHeader.ContentType, "application/json");
                 _wc.Headers.Add(HttpRequestHeader.Accept, "application/json");
                 _wc.Headers.Add("Origin", Props.NicoOrigin);
                 _wc.Headers.Add(HttpRequestHeader.Referer, Props.NicoDomain);
+                SetCookieContainer(_wc, cookie);
 
                 var result = await _wc.UploadStringTaskAsync(url, "POST", senddata).Timeout(_wc.timeout);
-                if (string.IsNullOrEmpty(result)) return (data, "result is null", neterr);
+                if (string.IsNullOrEmpty(result))
+                {
+                    _wc?.Dispose();
+                    return (data, "result is null", neterr);
+                }
                 data = JObject.Parse(result);
             }
             catch (WebException Ex)
@@ -436,42 +511,19 @@ namespace Sirrene.Net
                 }
                 else
                     err = Ex.Message;
-                return (data, err, neterr);
             }
             catch (Exception Ex) //その他のエラー
             {
                 DebugWrite.Writeln(nameof(PostNicoDmcSessionAsync), Ex);
                 err = Ex.Message;
-                return (data, err, neterr);
+            }
+            finally
+            {
+                cookie = GetCookieContainer(_wc);
+                _wc?.Dispose();
             }
 
             return (data, err, neterr);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: マネージ状態を破棄します (マネージ オブジェクト)。
-                    _wc?.Dispose();
-                }
-
-                // TODO: アンマネージ リソース (アンマネージ オブジェクト) を解放し、下のファイナライザーをオーバーライドします。
-                // TODO: 大きなフィールドを null に設定します。
-
-                disposedValue = true;
-            }
-        }
-
-        // このコードは、破棄可能なパターンを正しく実装できるように追加されました。
-        public void Dispose()
-        {
-            // このコードを変更しないでください。クリーンアップ コードを上の Dispose(bool disposing) に記述します。
-            Dispose(true);
-            // TODO: 上のファイナライザーがオーバーライドされる場合は、次の行のコメントを解除してください。
-            //GC.SuppressFinalize(this);
         }
 
     }
