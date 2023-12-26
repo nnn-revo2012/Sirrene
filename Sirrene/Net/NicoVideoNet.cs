@@ -297,7 +297,7 @@ namespace Sirrene.Net
             return (data, err, neterr);
         }
 
-        public async Task<(JObject data, string err, int neterr)> PostNicoDmsSessionAsync(CookieContainer cookie, string url, string senddata)
+        public async Task<(JObject data, string err, int neterr)> PostNicoDmsSessionAsync(CookieContainer cookie, string url, string senddata, string accessrightkey)
         {
             JObject data = null;
             string err = null;
@@ -305,6 +305,7 @@ namespace Sirrene.Net
 
             if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
             if (string.IsNullOrEmpty(senddata)) return (data, "senddata is null", neterr);
+            if (string.IsNullOrEmpty(accessrightkey)) return (data, "accessrightkey is null", neterr);
 
             var _wc = new WebClientEx();
             try
@@ -323,6 +324,7 @@ namespace Sirrene.Net
                 //X-Frontend-Id: 6
                 //X-Frontend-Version: 0
                 //X-Request-With: https://www.nicovideo.jp
+                _wc.Headers.Add("X-Access-Right-Key", accessrightkey);
                 _wc.Headers.Add("X-Frontend-Id", "6");
                 _wc.Headers.Add("X-Frontend-Version", "0");
                 _wc.Headers.Add("X-Request-With", Props.NicoDomain);

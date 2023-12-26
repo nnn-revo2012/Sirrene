@@ -22,6 +22,7 @@ namespace Sirrene
     {
         public string Status { set; get; }
         public string Error { set; get; }
+        public bool IsDms { set; get; }
 
         public string VideoId { set; get; }
         public string Title { set; get; }
@@ -44,12 +45,14 @@ namespace Sirrene
         public string Content_Uri { set; get; }
         public string Heartbeat_Uri { set; get; }
         public string Heartbeat_Data { set; get; }
+        public string AccessRightKey { set; get; } //DMS only
 
         public DataJson(string videoid)
         {
             this.VideoId = videoid;
             this.Status = null;
             this.Error = null;
+            this.IsDms = false;
 
             this.IsPremium = false;
             this.IsPeakTime = false;
@@ -70,6 +73,7 @@ namespace Sirrene
             var result = false;
             var err = "";
             JToken delivery = null;
+            JToken domand = null;
 
             try
             {
@@ -95,17 +99,35 @@ namespace Sirrene
                     return (result, err);
                 }
 
-                if (datajson["media"]["delivery"] != null)
+                this.IsDms = false;
+                if (datajson["media"]["domand"] != null)
                 {
-                    if (datajson["media"]["delivery"].HasValues)
-                        delivery = datajson["media"]["delivery"];
+                    if (datajson["media"]["domand"].HasValues)
+                    {
+                        domand = datajson["media"]["domand"];
+                        this.IsWatchVideo = true;
+                        this.IsDms = true;
+                    }
                     else
                         this.IsWatchVideo = false;
                 }
-                else
+                if (!this.IsDms)
                 {
-                    err = "JSON data media delivery not found.";
-                    return (result, err);
+                    if (datajson["media"]["delivery"] != null)
+                    {
+                        if (datajson["media"]["delivery"].HasValues)
+                        {
+                            delivery = datajson["media"]["delivery"];
+                            this.IsWatchVideo = true;
+                        }
+                        else
+                            this.IsWatchVideo = false;
+                    }
+                    else
+                    {
+                        err = "JSON data media domand/delivery not found.";
+                        return (result, err);
+                    }
                 }
 
                 this.IsEconomy = this.IsPeakTime;
@@ -117,22 +139,35 @@ namespace Sirrene
                     else
                     {
                         if (IsWatchVideo)
-                            if (delivery["movie"] != null)
+                        {
+                            if (IsDms)
                             {
-                                if ((bool)(delivery["movie"]["audios"][0]["isAvailable"]) &&
-                                    (bool)(delivery["movie"]["videos"][0]["isAvailable"]))
-                                    this.IsEconomy = false;
                             }
-                    }
+                            else
+                            {
+                                if (delivery["movie"] != null)
+                                {
+                                    if ((bool)(delivery["movie"]["audios"][0]["isAvailable"]) &&
+                                        (bool)(delivery["movie"]["videos"][0]["isAvailable"]))
+                                        this.IsEconomy = false;
+                                }
+                            }
 
+                        }
+                    }
                 if (IsWatchVideo)
-                    if (delivery["encryption"] != null &&
-                        delivery["encryption"].HasValues)
+                    if (IsDms)
                     {
-                        this.IsEncrypt = true;
-                        this.IsWatchVideo = false;
                     }
-
+                    else
+                    {
+                        if (delivery["encryption"] != null &&
+                                delivery["encryption"].HasValues)
+                        {
+                            this.IsEncrypt = true;
+                            this.IsWatchVideo = false;
+                        }
+                    }
                 if (datajson["video"] != null)
                 {
                     this.Title = (string)datajson["video"]["title"];
@@ -172,6 +207,55 @@ namespace Sirrene
                 err = Ex.Message;
                 return (result, err);
             }
+        }
+
+        public (string result, string err) MakeDmsSession(JObject datajson)
+        {
+            var result = "";
+            var err = "";
+            JToken session = null;
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                if (datajson["media"]["domand"] != null)
+                {
+                    if (datajson["media"]["domand"].HasValues)
+                        session = datajson["media"]["domand"];
+                }
+                else
+                {
+                    err = "JSON data media domand not found.";
+                    return (result, err);
+                }
+
+                var videos = session["videos"].ToString();
+                var audios = session["audios"].ToString();
+                this.AccessRightKey = session["accessRightKey"].ToString();
+                var trackid = datajson["client"]["watchTrackId"].ToString();
+                this.Session_Uri = Props.DmsSessionUrl.Replace("%%VIDEOID%%", this.VideoId).Replace("%%TRACKID%%", trackid);
+
+                sb.Append("{");
+                sb.Append("    \"outputs\": [");
+                sb.Append("        [");
+                sb.Append("            \"video-h264-360p\",");
+                sb.Append("            \"audio-aac-64kbps\"");
+                sb.Append("        ]");
+                sb.Append("    ]");
+                sb.Append("}");
+
+                result = sb.ToString();
+                var obj = JsonConvert.DeserializeObject(result);
+                result = JsonConvert.SerializeObject(obj, Formatting.None);
+            }
+            catch (Exception Ex) //その他のエラー
+            {
+                DebugWrite.Writeln(nameof(MakeDmsSession), Ex);
+                err = Ex.Message;
+                result = sb.ToString();
+                return (result, err);
+            }
+            return (result, err);
         }
 
         public (string result, string err) MakeDmcSession(JObject datajson)

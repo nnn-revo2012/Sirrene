@@ -267,12 +267,16 @@ namespace Sirrene
                     AddLog("PeakTime(Economy Time)", 1);
                 else
                     AddLog("No PeakTime(Not Econmy Time)", 1);
+                if (djs.IsDms)
+                    AddLog("新サーバー(DMS)を使用します。", 1);
+                else
+                    AddLog("旧サーバー(DMC)を使用します。", 1);
                 if (djs.IsEconomy)
                     AddLog("エコノミー動画をダウンロードします。", 1);
                 else
                     AddLog("通常動画をダウンロードします。", 1);
                 if (djs.IsEncrypt)
-                    AddLog("暗号化された動画です。", 1);
+                        AddLog("暗号化された動画です。", 1);
                 if (!djs.IsWatchVideo)
                     AddLog("動画がダウンロードできません。", 1);
 
@@ -326,48 +330,89 @@ namespace Sirrene
 
                 // Session作成
                 String session = "";
-                (session, err) = djs.MakeDmcSession(dataJson);
+                if (djs.IsDms)
+                    (session, err) = djs.MakeDmsSession(dataJson);
+                else
+                    (session, err) = djs.MakeDmcSession(dataJson);
                 if (!string.IsNullOrEmpty(session))
                 {
                     if (!string.IsNullOrEmpty(err))
                     {
-                        AddLog("MakeDmcSession Error: " + err , 1);
+                        if (djs.IsDms)
+                            AddLog("MakeDmsSession Error: " + err, 1);
+                        else
+                            AddLog("MakeDmcSession Error: " + err, 1);
                         return;
                     }
                     AddSession(JObject.Parse(session).ToString());
                 }
                 // SessionをapiにPOST
-                AddLog("Send PostDmcSession", 1);
-                (sessionJson, err, neterr) = await nvn.PostNicoDmcSessionAsync(cookiecontainer, djs.Session_Uri + "?_format=json", session);
-                if (!string.IsNullOrEmpty(err))
+                if (djs.IsDms)
                 {
-                    AddLog("Send PostSession Error: " + err + "(" + neterr + ")", 1);
-                }
-                else
-                {
-                    if (sessionJson["meta"] != null)
+                    AddLog("Send PostDmsSession", 1);
+                    (sessionJson, err, neterr) = await nvn.PostNicoDmsSessionAsync(cookiecontainer, djs.Session_Uri, session, djs.AccessRightKey);
+                    if (!string.IsNullOrEmpty(err))
                     {
-                        var msg = (string)sessionJson["meta"]["message"] +
-                            "(" + sessionJson["meta"]["status"].ToString() + ")";
-                        AddLog("Send PostSession " + msg, 9);
+                        AddLog("Send PostDmsSession Error: " + err + "(" + neterr + ")", 1);
+                    }
+                    else
+                    {
+                        if (sessionJson["meta"] != null)
+                        {
+                            var msg = (string)sessionJson["meta"]["message"] +
+                                "(" + sessionJson["meta"]["status"].ToString() + ")";
+                            AddLog("Send PostDmsSession " + msg, 9);
+                        }
+                        AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
+                        //(flg, err) = djs.GetDmsContentUri(sessionJson);
+                        //if (flg)
+                        //{
+                        //    AddLog("Content_Uri: " + djs.Content_Uri, 9);
+                        //}
+                        //else
+                        //{
+                        //    AddLog("Content_Uri Error: " + err, 1);
+                        //}
                     }
                 }
-                AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
-                (flg, err) = djs.GetDmcContentUri(sessionJson);
-                if (flg)
-                {
-                    AddLog("Content_Uri: " + djs.Content_Uri, 9);
-                    AddLog("Heartbeat_Uri: " + djs.Heartbeat_Uri, 9);
-                    //AddSession("\r\nHeartbeat:\r\n" + djs.Heartbeat_Data);
-                }
                 else
                 {
-                    AddLog("Content_Uri Error: " + err, 1);
+                    AddLog("Send PostDmcSession", 1);
+                    (sessionJson, err, neterr) = await nvn.PostNicoDmcSessionAsync(cookiecontainer, djs.Session_Uri + "?_format=json", session);
+                    if (!string.IsNullOrEmpty(err))
+                    {
+                        AddLog("Send PostDmcSession Error: " + err + "(" + neterr + ")", 1);
+                    }
+                    else
+                    {
+                        if (sessionJson["meta"] != null)
+                        {
+                            var msg = (string)sessionJson["meta"]["message"] +
+                                "(" + sessionJson["meta"]["status"].ToString() + ")";
+                            AddLog("Send PostDmcSession " + msg, 9);
+                        }
+                        AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
+                        (flg, err) = djs.GetDmcContentUri(sessionJson);
+                        if (flg)
+                        {
+                            AddLog("Content_Uri: " + djs.Content_Uri, 9);
+                            AddLog("Heartbeat_Uri: " + djs.Heartbeat_Uri, 9);
+                            //AddSession("\r\nHeartbeat:\r\n" + djs.Heartbeat_Data);
+                        }
+                        else
+                        {
+                            AddLog("Content_Uri Error: " + err, 1);
+                        }
+                    }
                 }
 
                 var ri = new RetryInfo();
                 rti = ri;
                 rti.Count = 3;
+
+                //DEBUG
+                End_DL(0);
+                return;
 
                 //動画ダウンロード
                 IsStart_flg = true;

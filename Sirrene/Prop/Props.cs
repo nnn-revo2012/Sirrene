@@ -24,6 +24,8 @@ namespace Sirrene.Prop
 
         public static readonly string NicoLoginUrl = "https://account.nicovideo.jp/login/redirector?show_button_twitter=1&site=niconico&show_button_facebook=1&next_url=%2F";
 
+        public static readonly string DmsSessionUrl = "https://nvapi.nicovideo.jp/v1/watch/%%VIDEOID%%/access-rights/hls?actionTrackId=%%TRACKID%%";
+
         public static readonly IDictionary<string, string> Quality =
             new Dictionary<string, string>()
         {
