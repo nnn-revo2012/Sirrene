@@ -363,6 +363,54 @@ namespace Sirrene.Net
             return (data, err, neterr);
         }
 
+        public async Task<(string data, string err, int neterr)> GetNicoMasterDmsAsync(CookieContainer cookie, string url)
+        {
+            string data = null;
+            string err = null;
+            int neterr = 0;
+
+            if (string.IsNullOrEmpty(url)) return (data, "url is null", neterr);
+
+            var _wc = new WebClientEx();
+            try
+            {
+                _wc.Encoding = Encoding.UTF8;
+                _wc.Proxy = null;
+                _wc.Headers.Add(HttpRequestHeader.UserAgent, Props.UserAgent);
+                _wc.timeout = 30000;
+                SetCookieContainer(_wc, cookie);
+
+                data = await _wc.DownloadStringTaskAsync(url).Timeout(_wc.timeout);
+                if (string.IsNullOrEmpty(data))
+                {
+                    _wc?.Dispose();
+                    return (data, "result is null", neterr);
+                }
+            }
+            catch (WebException Ex)
+            {
+                DebugWrite.WriteWebln(nameof(GetNicoMasterDmsAsync), Ex);
+                if (Ex.Status == WebExceptionStatus.ProtocolError)
+                {
+                    HttpWebResponse errres = (HttpWebResponse)Ex.Response;
+                    neterr = (int)errres.StatusCode;
+                    err = neterr.ToString() + " " + errres.StatusDescription;
+                }
+                else
+                    err = Ex.Message;
+            }
+            catch (Exception Ex) //その他のエラー
+            {
+                DebugWrite.Writeln(nameof(GetNicoMasterDmsAsync), Ex);
+                err = Ex.Message;
+            }
+            finally
+            {
+                _wc?.Dispose();
+            }
+
+            return (data, err, neterr);
+        }
         public async Task<(JObject data, string err, int neterr)> PostNicoCommentAsync(CookieContainer cookie, string url, string senddata)
         {
             JObject data = null;

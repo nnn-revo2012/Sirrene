@@ -364,15 +364,15 @@ namespace Sirrene
                             AddLog("Send PostDmsSession " + msg, 9);
                         }
                         AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
-                        //(flg, err) = djs.GetDmsContentUri(sessionJson);
-                        //if (flg)
-                        //{
-                        //    AddLog("Content_Uri: " + djs.Content_Uri, 9);
-                        //}
-                        //else
-                        //{
-                        //    AddLog("Content_Uri Error: " + err, 1);
-                        //}
+                        (flg, err) = djs.GetDmsContentUri(sessionJson);
+                        if (flg)
+                        {
+                            AddLog("Content_Uri: " + djs.Content_Uri, 9);
+                        }
+                        else
+                        {
+                            AddLog("Content_Uri Error: " + err, 1);
+                        }
                     }
                 }
                 else
@@ -411,8 +411,25 @@ namespace Sirrene
                 rti.Count = 3;
 
                 //DEBUG
-                End_DL(0);
-                return;
+                if (djs.IsDms)
+                {
+                    AddLog("Get NicoMasterDms", 1);
+                    AddSession("\r\nMaster.m3u8:\r\n");
+                    string data;
+                    (data, err, neterr) = await nvn.GetNicoMasterDmsAsync(cookiecontainer, djs.Content_Uri);
+                    if (!string.IsNullOrEmpty(err))
+                    {
+                        AddLog("GetNicoMasterDmsAsync Error: " + err + "(" + neterr + ")", 1);
+                    }
+                    else
+                    {
+                        AddLog("GetNicoMasterDmsAsync", 1);
+                    }
+                    AddSession(data);
+
+                    End_DL(0);
+                    return;
+                }
 
                 //動画ダウンロード
                 IsStart_flg = true;

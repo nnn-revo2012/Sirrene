@@ -400,6 +400,34 @@ namespace Sirrene
             return (result, err);
         }
 
+        public (bool result, string err) GetDmsContentUri(JObject session_json)
+        {
+            var result = false;
+            var err = "";
+            this.Content_Uri = null;
+
+            try
+            {
+                if (session_json["data"] != null)
+                {
+                    this.Content_Uri = (string)session_json["data"]["contentUrl"];
+                    var obj = JsonConvert.DeserializeObject(session_json["data"].ToString());
+
+                    result = true;
+                }
+                else
+                {
+                    err = "content_uri not found.";
+                }
+            }
+            catch (Exception Ex) //その他のエラー
+            {
+                DebugWrite.Writeln(nameof(GetDmsContentUri), Ex);
+                err = Ex.Message;
+                return (result, err);
+            }
+            return (result, err);
+        }
 
         //指定フォーマットに基づいて録画サブディレクトリー名を作る
         public string SetRecFolderFormat(string s)
