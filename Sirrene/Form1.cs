@@ -260,23 +260,14 @@ namespace Sirrene
                     return;
                 }
                 if (djs.IsPremium)
-                        AddLog("Premium Account", 1);
-                    else
-                        AddLog("Normal Account", 1);
+                    AddLog("Premium Account", 1);
+                else
+                    AddLog("Normal Account", 1);
                 if (djs.IsPeakTime)
                     AddLog("PeakTime(Economy Time)", 1);
                 else
                     AddLog("No PeakTime(Not Econmy Time)", 1);
-                if (djs.IsDms)
-                    AddLog("新サーバー(DMS)を使用します。", 1);
-                else
-                    AddLog("旧サーバー(DMC)を使用します。", 1);
-                if (djs.IsEconomy)
-                    AddLog("エコノミー動画をダウンロードします。", 1);
-                else
-                    AddLog("通常動画をダウンロードします。", 1);
-                if (djs.IsEncrypt)
-                        AddLog("暗号化された動画です。", 1);
+                AddLog("新サーバー(DMS)を使用します。", 1);
                 if (!djs.IsWatchVideo)
                     AddLog("動画がダウンロードできません。", 1);
 
@@ -289,20 +280,11 @@ namespace Sirrene
                 epi.Sfolder = djs.SetRecFolderFormat(props.SaveFolder);
                 epi.Protocol = "hls";
                 epi.Seq = 0;
-                ExecPsInfo.MakeRecDir(epi);
+                //ExecPsInfo.MakeRecDir(epi);
                 AddLog("Genre: " + djs.Genre, 1);
                 AddLog("TAG(" + djs.TagList.Count + ")" , 1);
+                epi.SaveFile = ExecPsInfo.GetSaveFileSqlite3(epi) + epi.Ext;
 
-                if (props.UseExternal == UseExternal.native)
-                {
-                    var file = ExecPsInfo.GetSaveFileSqlite3(epi);
-                    file += ".sqlite3";
-                    epi.SaveFile = file;
-                    _ndb = new NicoDb(this, epi.SaveFile);
-                    _ndb.CreateDbAll();
-
-                    //_ndb.WriteDbKvsProps(djs.Data_Props);
-                }
                 AddLog("File: "+epi.SaveFile, 9);
                 EnableButton(false);
 
@@ -330,79 +312,40 @@ namespace Sirrene
 
                 // Session作成
                 String session = "";
-                if (djs.IsDms)
-                    (session, err) = djs.MakeDmsSession(dataJson);
-                else
-                    (session, err) = djs.MakeDmcSession(dataJson);
+                (session, err) = djs.MakeDmsSession(dataJson);
                 if (!string.IsNullOrEmpty(session))
                 {
                     if (!string.IsNullOrEmpty(err))
                     {
-                        if (djs.IsDms)
-                            AddLog("MakeDmsSession Error: " + err, 1);
-                        else
-                            AddLog("MakeDmcSession Error: " + err, 1);
+                        AddLog("MakeDmsSession Error: " + err, 1);
                         return;
                     }
                     AddSession(JObject.Parse(session).ToString());
                 }
                 // SessionをapiにPOST
-                if (djs.IsDms)
+                AddLog("Send PostDmsSession", 1);
+                (sessionJson, err, neterr) = await nvn.PostNicoDmsSessionAsync(cookiecontainer, djs.Session_Uri, session, djs.AccessRightKey);
+                if (!string.IsNullOrEmpty(err))
                 {
-                    AddLog("Send PostDmsSession", 1);
-                    (sessionJson, err, neterr) = await nvn.PostNicoDmsSessionAsync(cookiecontainer, djs.Session_Uri, session, djs.AccessRightKey);
-                    if (!string.IsNullOrEmpty(err))
-                    {
-                        AddLog("Send PostDmsSession Error: " + err + "(" + neterr + ")", 1);
-                    }
-                    else
-                    {
-                        if (sessionJson["meta"] != null)
-                        {
-                            var msg = (string)sessionJson["meta"]["message"] +
-                                "(" + sessionJson["meta"]["status"].ToString() + ")";
-                            AddLog("Send PostDmsSession " + msg, 9);
-                        }
-                        AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
-                        (flg, err) = djs.GetDmsContentUri(sessionJson);
-                        if (flg)
-                        {
-                            AddLog("Content_Uri: " + djs.Content_Uri, 9);
-                        }
-                        else
-                        {
-                            AddLog("Content_Uri Error: " + err, 1);
-                        }
-                    }
+                    AddLog("Send PostDmsSession Error: " + err + "(" + neterr + ")", 1);
                 }
                 else
                 {
-                    AddLog("Send PostDmcSession", 1);
-                    (sessionJson, err, neterr) = await nvn.PostNicoDmcSessionAsync(cookiecontainer, djs.Session_Uri + "?_format=json", session);
-                    if (!string.IsNullOrEmpty(err))
+                    if (sessionJson["meta"] != null)
                     {
-                        AddLog("Send PostDmcSession Error: " + err + "(" + neterr + ")", 1);
+                        var msg = (string)sessionJson["meta"]["message"] +
+                            "(" + sessionJson["meta"]["status"].ToString() + ")";
+                        AddLog("Send PostDmsSession " + msg, 9);
+                    }
+                    AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
+                    (flg, err) = djs.GetDmsContentUri(sessionJson);
+                    if (flg)
+                    {
+                        AddLog("Content_Uri: " + djs.Content_Uri, 9);
                     }
                     else
                     {
-                        if (sessionJson["meta"] != null)
-                        {
-                            var msg = (string)sessionJson["meta"]["message"] +
-                                "(" + sessionJson["meta"]["status"].ToString() + ")";
-                            AddLog("Send PostDmcSession " + msg, 9);
-                        }
-                        AddSession("\r\nResponse:\r\n" + sessionJson.ToString());
-                        (flg, err) = djs.GetDmcContentUri(sessionJson);
-                        if (flg)
-                        {
-                            AddLog("Content_Uri: " + djs.Content_Uri, 9);
-                            AddLog("Heartbeat_Uri: " + djs.Heartbeat_Uri, 9);
-                            //AddSession("\r\nHeartbeat:\r\n" + djs.Heartbeat_Data);
-                        }
-                        else
-                        {
-                            AddLog("Content_Uri Error: " + err, 1);
-                        }
+                        AddLog("Content_Uri Error: " + err, 1);
                     }
                 }
 
@@ -411,26 +354,23 @@ namespace Sirrene
                 rti.Count = 3;
 
                 //DEBUG
-                if (djs.IsDms)
+                AddLog("Get NicoMasterDms", 1);
+                AddSession("\r\nMaster.m3u8:\r\n");
+                string data;
+                (data, err, neterr) = await nvn.GetNicoMasterDmsAsync(cookiecontainer, djs.Content_Uri);
+                if (!string.IsNullOrEmpty(err))
                 {
-                    AddLog("Get NicoMasterDms", 1);
-                    AddSession("\r\nMaster.m3u8:\r\n");
-                    string data;
-                    (data, err, neterr) = await nvn.GetNicoMasterDmsAsync(cookiecontainer, djs.Content_Uri);
-                    if (!string.IsNullOrEmpty(err))
-                    {
-                        AddLog("GetNicoMasterDmsAsync Error: " + err + "(" + neterr + ")", 1);
-                    }
-                    else
-                    {
-                        AddLog("GetNicoMasterDmsAsync", 1);
-                    }
-                    AddSession(data);
-
-                    End_DL(0);
-                    return;
+                    AddLog("GetNicoMasterDmsAsync Error: " + err + "(" + neterr + ")", 1);
                 }
+                else
+                {
+                    AddLog("GetNicoMasterDmsAsync", 1);
+                }
+                AddSession(data);
 
+                End_DL(0);
+
+/*
                 //動画ダウンロード
                 IsStart_flg = true;
                 IsBreak_flg = false;
@@ -491,6 +431,7 @@ namespace Sirrene
                     End_DL(0);
                     await Task.Run(() => StartExtract(epi.SaveFile));
                 }
+                */
 
                 return;
             } // try

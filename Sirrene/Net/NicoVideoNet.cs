@@ -469,6 +469,7 @@ namespace Sirrene.Net
             return (data, err, neterr);
         }
 
+        /*
         public async Task<(string data, string err, int neterr)> GetNicoCrossDomainAsync(CookieContainer cookie, string url)
         {
             string data = null;
@@ -575,6 +576,7 @@ namespace Sirrene.Net
 
             return (data, err, neterr);
         }
+        */
 
     }
 }

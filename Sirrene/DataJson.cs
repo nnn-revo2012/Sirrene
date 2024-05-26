@@ -22,7 +22,6 @@ namespace Sirrene
     {
         public string Status { set; get; }
         public string Error { set; get; }
-        public bool IsDms { set; get; }
 
         public string VideoId { set; get; }
         public string Title { set; get; }
@@ -43,8 +42,6 @@ namespace Sirrene
         public bool IsWatchVideo { set; get; }
         public string Session_Uri { set; get; }
         public string Content_Uri { set; get; }
-        public string Heartbeat_Uri { set; get; }
-        public string Heartbeat_Data { set; get; }
         public string AccessRightKey { set; get; } //DMS only
 
         public DataJson(string videoid)
@@ -52,7 +49,6 @@ namespace Sirrene
             this.VideoId = videoid;
             this.Status = null;
             this.Error = null;
-            this.IsDms = false;
 
             this.IsPremium = false;
             this.IsPeakTime = false;
@@ -65,14 +61,13 @@ namespace Sirrene
             this.TagList = new List<string>();
             this.Session_Uri = null;
             this.Content_Uri = null;
-            this.Heartbeat_Uri = null;
 
         }
+
         public (bool result, string err) GetDataJson(JObject datajson)
         {
             var result = false;
             var err = "";
-            JToken delivery = null;
             JToken domand = null;
 
             try
@@ -99,75 +94,22 @@ namespace Sirrene
                     return (result, err);
                 }
 
-                this.IsDms = false;
                 if (datajson["media"]["domand"] != null)
                 {
                     if (datajson["media"]["domand"].HasValues)
                     {
                         domand = datajson["media"]["domand"];
                         this.IsWatchVideo = true;
-                        this.IsDms = true;
                     }
                     else
                         this.IsWatchVideo = false;
-                }
-                if (!this.IsDms)
-                {
-                    if (datajson["media"]["delivery"] != null)
-                    {
-                        if (datajson["media"]["delivery"].HasValues)
-                        {
-                            delivery = datajson["media"]["delivery"];
-                            this.IsWatchVideo = true;
-                        }
-                        else
-                            this.IsWatchVideo = false;
-                    }
-                    else
-                    {
-                        err = "JSON data media domand/delivery not found.";
-                        return (result, err);
-                    }
                 }
 
                 this.IsEconomy = this.IsPeakTime;
                 if (this.IsPeakTime)
                     if (this.IsPremium)
-                    {
                         this.IsEconomy = false;
-                    }
-                    else
-                    {
-                        if (IsWatchVideo)
-                        {
-                            if (IsDms)
-                            {
-                            }
-                            else
-                            {
-                                if (delivery["movie"] != null)
-                                {
-                                    if ((bool)(delivery["movie"]["audios"][0]["isAvailable"]) &&
-                                        (bool)(delivery["movie"]["videos"][0]["isAvailable"]))
-                                        this.IsEconomy = false;
-                                }
-                            }
 
-                        }
-                    }
-                if (IsWatchVideo)
-                    if (IsDms)
-                    {
-                    }
-                    else
-                    {
-                        if (delivery["encryption"] != null &&
-                                delivery["encryption"].HasValues)
-                        {
-                            this.IsEncrypt = true;
-                            this.IsWatchVideo = false;
-                        }
-                    }
                 if (datajson["video"] != null)
                 {
                     this.Title = (string)datajson["video"]["title"];
@@ -253,148 +195,6 @@ namespace Sirrene
                 DebugWrite.Writeln(nameof(MakeDmsSession), Ex);
                 err = Ex.Message;
                 result = sb.ToString();
-                return (result, err);
-            }
-            return (result, err);
-        }
-
-        public (string result, string err) MakeDmcSession(JObject datajson)
-        {
-            var result = "";
-            var err = "";
-            JToken session = null;
-            StringBuilder sb = new StringBuilder();
-
-            try
-            {
-                if (datajson["media"]["delivery"] != null)
-                {
-                    if (datajson["media"]["delivery"].HasValues)
-                        session = datajson["media"]["delivery"]["movie"]["session"];
-                }
-                else
-                {
-                    err = "JSON data media delivery not found.";
-                    return (result, err);
-                }
-
-                var recipe_id = (string)session["recipeId"];
-                var player_id = (string)session["playerId"];
-                var content_id = (string)session["contentId"];
-                var lifetime = session["heartbeatLifetime"].ToString();
-                var timeout = session["contentKeyTimeout"].ToString();
-                var priority = session["priority"].ToString();
-                var token = ((string)session["token"]).Replace("\"", "\\\"");
-                var signature = (string)session["signature"];
-                var user_id = (string)session["serviceUserId"];
-                var videos = session["videos"].ToString();
-                var audios = session["audios"].ToString();
-                this.Session_Uri = session["urls"][0]["url"].ToString();
-
-                sb.Append("{");
-                sb.Append("  \"session\": {");
-                sb.Append("    \"recipe_id\": \"" + recipe_id + "\",");
-                sb.Append("    \"content_id\": \"" + content_id + "\",");
-                sb.Append("    \"content_type\": \"movie\",");
-                sb.Append("    \"content_src_id_sets\": [");
-                sb.Append("      {");
-                sb.Append("        \"content_src_ids\": [");
-                sb.Append("          {");
-                sb.Append("            \"src_id_to_mux\": {");
-                sb.Append("              \"video_src_ids\": ");
-                sb.Append("              " + videos);
-                sb.Append("              ,");
-                sb.Append("              \"audio_src_ids\": ");
-                sb.Append("              " + audios);
-                sb.Append("              ");
-                sb.Append("            }");
-                sb.Append("          }");
-                sb.Append("        ]");
-                sb.Append("      }");
-                sb.Append("    ],");
-                sb.Append("    \"timing_constraint\": \"unlimited\",");
-                sb.Append("    \"keep_method\": {");
-                sb.Append("      \"heartbeat\": {");
-                sb.Append("        \"lifetime\": " + lifetime);
-                sb.Append("      }");
-                sb.Append("    },");
-                sb.Append("    \"protocol\": {");
-                sb.Append("      \"name\": \"http\",");
-                sb.Append("      \"parameters\": {");
-                sb.Append("        \"http_parameters\": {");
-                sb.Append("          \"parameters\": {");
-                sb.Append("            \"hls_parameters\": {");
-                sb.Append("              \"use_well_known_port\": \"yes\",");
-                sb.Append("              \"use_ssl\": \"yes\",");
-                sb.Append("              \"transfer_preset\": \"\",");
-                sb.Append("              \"segment_duration\": 6000");
-                sb.Append("            }");
-                sb.Append("          }");
-                sb.Append("        }");
-                sb.Append("      }");
-                sb.Append("    },");
-                sb.Append("    \"content_uri\": \"\",");
-                sb.Append("    \"session_operation_auth\": {");
-                sb.Append("      \"session_operation_auth_by_signature\": {");
-                sb.Append("        \"token\": \"" + token + "\",");
-                sb.Append("        \"signature\": \"" + signature + "\"");
-                sb.Append("      }");
-                sb.Append("    },");
-                sb.Append("    \"content_auth\": {");
-                sb.Append("      \"auth_type\": \"ht2\",");
-                sb.Append("      \"content_key_timeout\": " + timeout + ",");
-                sb.Append("      \"service_id\": \"nicovideo\",");
-                sb.Append("      \"service_user_id\": \"" + user_id + "\"");
-                sb.Append("    },");
-                sb.Append("    \"client_info\": {");
-                sb.Append("      \"player_id\": \"" + player_id + "\"");
-                sb.Append("    },");
-                sb.Append("    \"priority\": " + priority);
-                sb.Append("  }");
-                sb.Append("}");
-
-                result = sb.ToString();
-                var obj = JsonConvert.DeserializeObject(result);
-                result = JsonConvert.SerializeObject(obj, Formatting.None);
-            }
-            catch (Exception Ex) //その他のエラー
-            {
-                DebugWrite.Writeln(nameof(MakeDmcSession), Ex);
-                err = Ex.Message;
-                result = sb.ToString();
-                return (result, err);
-            }
-            return (result, err);
-        }
-
-        public (bool result, string err) GetDmcContentUri(JObject session_json)
-        {
-            var result = false;
-            var err = "";
-            this.Content_Uri = null;
-
-            try
-            {
-                if (session_json["data"] != null)
-                {
-                    this.Content_Uri = (string)session_json["data"]["session"]["content_uri"];
-                    this.Heartbeat_Uri = this.Session_Uri + "/" +
-                        (string)session_json["data"]["session"]["id"] +
-                        "?_format=json&_method=PUT";
-                    var obj = JsonConvert.DeserializeObject(session_json["data"].ToString());
-                    this.Heartbeat_Data = JsonConvert.SerializeObject(obj, Formatting.None);
-
-                    result = true;
-                }
-                else
-                {
-                    err = "content_uri not found.";
-                }
-            }
-            catch (Exception Ex) //その他のエラー
-            {
-                DebugWrite.Writeln(nameof(GetDmcContentUri), Ex);
-                err = Ex.Message;
                 return (result, err);
             }
             return (result, err);
