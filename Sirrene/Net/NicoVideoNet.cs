@@ -411,9 +411,9 @@ namespace Sirrene.Net
 
             return (data, err, neterr);
         }
-        public async Task<(JObject data, string err, int neterr)> PostNicoCommentAsync(CookieContainer cookie, string url, string senddata)
+        public async Task<(string data, string err, int neterr)> PostNicoCommentAsync(CookieContainer cookie, string url, string senddata)
         {
-            JObject data = null;
+            string data = null;
             string err = null;
             int neterr = 0;
 
@@ -436,13 +436,12 @@ namespace Sirrene.Net
                 _wc.Headers.Add("X-Frontend-Id", "6");
                 _wc.Headers.Add("X-Frontend-Version", "0");
 
-                var result = await _wc.UploadStringTaskAsync(url, "POST", senddata).Timeout(_wc.timeout);
-                if (string.IsNullOrEmpty(result))
+                data = await _wc.UploadStringTaskAsync(url, "POST", senddata).Timeout(_wc.timeout);
+                if (string.IsNullOrEmpty(data))
                 {
                     _wc?.Dispose();
-                    return (data, "result is null", neterr);
+                    return (data, "data is null", neterr);
                 }
-                data = JObject.Parse(result);
             }
             catch (WebException Ex)
             {

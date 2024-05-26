@@ -90,6 +90,9 @@
     <Compile Include="Form2.Designer.cs">
       <DependentUpon>Form2.cs</DependentUpon>
     </Compile>
+    <Compile Include="Net\CommentInfo.cs" />
+    <Compile Include="Net\NicoComment.cs" />
+    <Compile Include="Net\NicoJsonParser.cs" />
     <Compile Include="Process\AExecProcess.cs" />
     <Compile Include="Process\ExecConvert.cs" />
     <Compile Include="Process\ExecProcess.cs" />

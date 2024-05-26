@@ -93,8 +93,9 @@ namespace Sirrene
                 //var tsk = nicoSessionComboBox1.Selector.SetInfoAsync(_props.SelectedCookie);
 
                 textBox3.Text = _props.SaveDir;
-                textBox4.Text = _props.SaveFolder;
-                textBox5.Text = _props.SaveFile;
+                textBox4.Text = _props.SaveFile;
+                textBox5.Text = _props.SaveCommentDir;
+                textBox6.Text = _props.SaveCommentFile;
 
                 /*
                                 comboBox2.Items.Clear();
@@ -166,8 +167,9 @@ namespace Sirrene
 
                 //_props.IsAllCookie = checkBox1.Checked;
                 _props.SaveDir = textBox3.Text;
-                _props.SaveFolder = textBox4.Text;
-                _props.SaveFile = textBox5.Text;
+                _props.SaveFile = textBox4.Text;
+                _props.SaveCommentDir = textBox5.Text;
+                _props.SaveCommentFile = textBox6.Text;
 
                 /*
                                 _props.QuarityType =

@@ -41,6 +41,10 @@ namespace Sirrene.Prop
         public static readonly string LOW_PREFIX = "low_"; // Define LOW_PREFIX and DMC_PREFIX if needed
         public static readonly string DMC_PREFIX = "dmc_";
         public static readonly string ECO_PREFIX = "eco_";
+        public static readonly string OWNER_EXT = "[Owner].xml";    // 投稿者コメントサフィックス
+        public static readonly string OPTIONAL_EXT = "{Optional}.xml";  // オプショナルスレッドサフィックス
+        public static readonly string EASY_EXT = "{Easy}.xml";  // かんたんコメントサフィックス
+        public static readonly string NICOS_EXT = "{Nicos}.xml";	//ニコスコメントサフィックス
 
         public bool IsDebug { get; set; }
 
@@ -60,6 +64,9 @@ namespace Sirrene.Prop
         public bool IsLogging { get; set; }
         public bool IsComment { get; set; }
         public bool IsVideo { get; set; }
+        public string SaveCommentDir { get; set; }
+        public string SaveCommentFolder { get; set; }
+        public string SaveCommentFile { get; set; }
 
 
         public Props()
@@ -110,6 +117,9 @@ namespace Sirrene.Prop
                 this.IsLogging = Properties.Settings.Default.IsLogging;
                 this.IsComment = Properties.Settings.Default.IsComment;
                 this.IsVideo = Properties.Settings.Default.IsVideo;
+                this.SaveCommentDir = Properties.Settings.Default.SaveCommentDir;
+                this.SaveCommentFolder = Properties.Settings.Default.SaveCommentFolder;
+                this.SaveCommentFile = Properties.Settings.Default.SaveCommentFile;
             }
             catch (Exception Ex)
             {
@@ -137,8 +147,10 @@ namespace Sirrene.Prop
                 Properties.Settings.Default.IsLogging = this.IsLogging;
                 Properties.Settings.Default.IsComment = this.IsComment;
                 Properties.Settings.Default.IsVideo = this.IsVideo;
+                Properties.Settings.Default.SaveCommentDir = this.SaveCommentDir;
+                Properties.Settings.Default.SaveCommentFolder = this.SaveCommentFolder;
+                Properties.Settings.Default.SaveCommentFile = this.SaveCommentFile;
                 Properties.Settings.Default.Save();
-
                 if (acc_flg == true)
                 {
                     using (var db = new Account(accountdbfile))

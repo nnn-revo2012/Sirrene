@@ -15,7 +15,7 @@
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="SaveFolder" Type="System.String" Scope="User">
-      <Value Profile="(Default)">rec</Value>
+      <Value Profile="(Default)" />
     </Setting>
     <Setting Name="SaveFile" Type="System.String" Scope="User">
       <Value Profile="(Default)">%id%%TITLE%</Value>
@@ -43,6 +43,15 @@
     </Setting>
     <Setting Name="IsVideo" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="SaveCommentDir" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="SaveCommentFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="SaveCommentFile" Type="System.String" Scope="User">
+      <Value Profile="(Default)">%id%%TITLE%</Value>
     </Setting>
   </Settings>
 </SettingsFile>

@@ -44,19 +44,22 @@ namespace Sirrene
             this.rB_none = new System.Windows.Forms.RadioButton();
             this.rB_always = new System.Windows.Forms.RadioButton();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.textBox5 = new System.Windows.Forms.TextBox();
             this.textBox4 = new System.Windows.Forms.TextBox();
             this.textBox3 = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.textBox5 = new System.Windows.Forms.TextBox();
+            this.textBox6 = new System.Windows.Forms.TextBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.groupBox3.SuspendLayout();
+            this.groupBox4.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -199,6 +202,7 @@ namespace Sirrene
             // 
             this.rB_none.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.rB_none.AutoSize = true;
+            this.rB_none.Enabled = false;
             this.rB_none.Location = new System.Drawing.Point(123, 17);
             this.rB_none.Name = "rB_none";
             this.rB_none.Size = new System.Drawing.Size(88, 16);
@@ -221,6 +225,7 @@ namespace Sirrene
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.groupBox4);
             this.tabPage2.Controls.Add(this.checkBox1);
             this.tabPage2.Controls.Add(this.groupBox3);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
@@ -231,30 +236,33 @@ namespace Sirrene
             this.tabPage2.Text = "ファイル設定";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // checkBox1
+            // 
+            this.checkBox1.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(17, 374);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(94, 16);
+            this.checkBox1.TabIndex = 1;
+            this.checkBox1.Text = "ログを出力する";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            // 
             // groupBox3
             // 
-            this.groupBox3.Controls.Add(this.textBox5);
             this.groupBox3.Controls.Add(this.textBox4);
             this.groupBox3.Controls.Add(this.textBox3);
             this.groupBox3.Location = new System.Drawing.Point(8, 33);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(373, 145);
+            this.groupBox3.Size = new System.Drawing.Size(373, 141);
             this.groupBox3.TabIndex = 0;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "動画ファイル";
-            // 
-            // textBox5
-            // 
-            this.textBox5.Location = new System.Drawing.Point(42, 89);
-            this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(229, 19);
-            this.textBox5.TabIndex = 3;
             // 
             // textBox4
             // 
             this.textBox4.Location = new System.Drawing.Point(42, 53);
             this.textBox4.Name = "textBox4";
-            this.textBox4.Size = new System.Drawing.Size(100, 19);
+            this.textBox4.Size = new System.Drawing.Size(229, 19);
             this.textBox4.TabIndex = 2;
             // 
             // textBox3
@@ -285,16 +293,30 @@ namespace Sirrene
             this.button2.Text = "CANCEL";
             this.button2.UseVisualStyleBackColor = true;
             // 
-            // checkBox1
+            // groupBox4
             // 
-            this.checkBox1.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(17, 374);
-            this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(94, 16);
-            this.checkBox1.TabIndex = 1;
-            this.checkBox1.Text = "ログを出力する";
-            this.checkBox1.UseVisualStyleBackColor = true;
+            this.groupBox4.Controls.Add(this.textBox6);
+            this.groupBox4.Controls.Add(this.textBox5);
+            this.groupBox4.Location = new System.Drawing.Point(8, 180);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(373, 127);
+            this.groupBox4.TabIndex = 2;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "コメントファイル";
+            // 
+            // textBox5
+            // 
+            this.textBox5.Location = new System.Drawing.Point(42, 18);
+            this.textBox5.Name = "textBox5";
+            this.textBox5.Size = new System.Drawing.Size(293, 19);
+            this.textBox5.TabIndex = 2;
+            // 
+            // textBox6
+            // 
+            this.textBox6.Location = new System.Drawing.Point(42, 56);
+            this.textBox6.Name = "textBox6";
+            this.textBox6.Size = new System.Drawing.Size(229, 19);
+            this.textBox6.TabIndex = 3;
             // 
             // Form2
             // 
@@ -319,6 +341,8 @@ namespace Sirrene
             this.tabPage2.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox4.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -344,8 +368,10 @@ namespace Sirrene
         private System.Windows.Forms.TextBox textBox3;
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.TextBox textBox4;
-        private System.Windows.Forms.TextBox textBox5;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.TextBox textBox6;
+        private System.Windows.Forms.TextBox textBox5;
     }
 }

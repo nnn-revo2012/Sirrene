@@ -24,16 +24,18 @@ namespace Sirrene
         //0処理待ち 1録画準備 2録画中 3再接続 4中断 5変換処理中 9終了
         private static int ProgramStatus { get; set; } //プログラム状態
         private volatile bool IsStart_flg = false;
-        private volatile bool IsBreak_flg = false;
+        public volatile bool IsBreak_flg = false;
 
         //dispose するもの
         private ExecProcess _eProcess = null;         //Process
         private RecHtml _rHtml = null;                //RecHtml
+        private NicoComment _nComment = null;         //NicoComment
         private NicoDb _ndb = null;                   //NicoDb
 
         private CookieContainer cookiecontainer = null;
         private NicoVideoNet nvn = null;
         private ExecPsInfo epi = null;                //実行／保存ファイル情報
+        private CommentInfo cmi = null;                //コメント情報
 
         private string videoId = null;
 
@@ -248,6 +250,7 @@ namespace Sirrene
                 if (!string.IsNullOrEmpty(err))
                 {
                     AddLog("この動画は存在しないか、削除された可能性があります。 (" + err + ")", 1);
+                    End_DL(0); 
                     return;
                 }
                 AddDataJson(dataJson.ToString());
@@ -277,7 +280,7 @@ namespace Sirrene
                 epi.Exec = GetExecFile(props.ExecFile[0]);
                 epi.Arg = props.ExecCommand[0];
                 epi.Sfile = djs.SetRecFileFormat(props.SaveFile);
-                epi.Sfolder = djs.SetRecFolderFormat(props.SaveFolder);
+                //epi.Sfolder = djs.SetRecFolderFormat(props.SaveFolder);
                 epi.Protocol = "hls";
                 epi.Seq = 0;
                 //ExecPsInfo.MakeRecDir(epi);
@@ -285,26 +288,44 @@ namespace Sirrene
                 AddLog("TAG(" + djs.TagList.Count + ")" , 1);
                 epi.SaveFile = ExecPsInfo.GetSaveFileSqlite3(epi) + epi.Ext;
 
-                AddLog("File: "+epi.SaveFile, 9);
+                AddLog("VideoFile: "+epi.SaveFile, 9);
                 EnableButton(false);
+                IsStart_flg = true;
+                IsBreak_flg = false;
 
-/*
                 //コメント情報
                 if (props.IsComment)
                 {
-                    cmi = new CommentInfo(bci.User_Id);
-                    cmi.OpenTime = bci.Open_Time;
-                    cmi.BeginTime = bci.Begin_Time;
-                    cmi.EndTime = bci.End_Time;
-                    if (bci.IsTimeShift())
-                        cctl = new CommentControl();
+                    AddLog("コメントをダウンロードします。", 1);
+                    cmi = new CommentInfo();
+                    cmi.Sdir = string.IsNullOrEmpty(props.SaveCommentDir) ? System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : props.SaveCommentDir;
+                    cmi.Sfile = djs.SetRecFileFormat(props.SaveCommentFile);
+                    cmi.SaveFile = ExecPsInfo.GetSaveFileSqlite3(epi);
+                    AddLog("CommentFile: " + epi.SaveFile, 9);
+                    //if (bci.IsTimeShift())
+                    //    cctl = new CommentControl();
+                    //else
+                    //    cctl = null;
+                    _nComment = new NicoComment(this, djs, cmi, nvn);
+                    bool result = false;
+                    (result, err, neterr) = await _nComment.GetCommentAsync(cookiecontainer);
+                    if (!result || !string.IsNullOrEmpty(err))
+                    {
+                        AddLog("コメントがダウンロードできませんでした。", 1);
+                    }
                     else
-                        cctl = null;
-                    _nNetComment = new NicoNetComment(this, bci, cmi, _nvn, _ndb, cctl);
+                    {
+                        AddLog("コメントをダウンロードしました。", 1);
+                    }
                 }
-*/
 
-                if (!djs.IsWatchVideo)
+                if (!IsStart_flg || IsBreak_flg)
+                {
+                    End_DL(1);
+                    return;
+                }
+
+                if (!props.IsVideo || !djs.IsWatchVideo)
                 {
                     End_DL(0);
                     return;
@@ -372,8 +393,6 @@ namespace Sirrene
 
 /*
                 //動画ダウンロード
-                IsStart_flg = true;
-                IsBreak_flg = false;
                 if (props.UseExternal == UseExternal.native)
                 {
                     _rHtml = new RecHtml(this, djs, cookiecontainer, _ndb, rti);
@@ -449,6 +468,10 @@ namespace Sirrene
                 {
                     _rHtml.BreakProcess("");
                 }
+                if (_nComment != null)
+                {
+                    _nComment.Dispose();
+                }
                 if (_eProcess != null)
                 {
                     _eProcess.BreakProcess(epi.BreakKey);
@@ -479,6 +502,10 @@ namespace Sirrene
             {
                 _rHtml.Dispose();
                 _rHtml = null;
+            }
+            if (_nComment != null)
+            {
+                _nComment.Dispose();
             }
             if (_eProcess != null)
             {

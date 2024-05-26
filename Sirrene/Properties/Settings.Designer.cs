@@ -73,7 +73,7 @@ namespace Sirrene.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("rec")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string SaveFolder {
             get {
                 return ((string)(this["SaveFolder"]));
@@ -188,6 +188,42 @@ namespace Sirrene.Properties {
             }
             set {
                 this["IsVideo"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string SaveCommentDir {
+            get {
+                return ((string)(this["SaveCommentDir"]));
+            }
+            set {
+                this["SaveCommentDir"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string SaveCommentFolder {
+            get {
+                return ((string)(this["SaveCommentFolder"]));
+            }
+            set {
+                this["SaveCommentFolder"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("%id%%TITLE%")]
+        public string SaveCommentFile {
+            get {
+                return ((string)(this["SaveCommentFile"]));
+            }
+            set {
+                this["SaveCommentFile"] = value;
             }
         }
     }

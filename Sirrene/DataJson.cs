@@ -43,6 +43,11 @@ namespace Sirrene
         public string Session_Uri { set; get; }
         public string Content_Uri { set; get; }
         public string AccessRightKey { set; get; } //DMS only
+        public string ComServer { set; get; }
+        public string ComThreadKey { set; get; }
+        public string ComParams { set; get; }
+        public bool IsOptional { set; get; }
+        public bool IsNicos { set; get; }
 
         public DataJson(string videoid)
         {
@@ -61,6 +66,11 @@ namespace Sirrene
             this.TagList = new List<string>();
             this.Session_Uri = null;
             this.Content_Uri = null;
+            this.ComServer = null;
+            this.ComThreadKey = null;
+            this.ComParams = null;
+            this.IsOptional = false;
+            this.IsNicos = false;
 
         }
 
@@ -72,6 +82,31 @@ namespace Sirrene
 
             try
             {
+                //コメント関連の処理
+                if (datajson["comment"]["nvComment"] != null)
+                {
+                    var comment = datajson["comment"]["nvComment"];
+                    if (comment != null)
+                    {
+                        this.ComServer = (string)comment["server"];
+                        this.ComThreadKey = (string)comment["threadKey"];
+                        this.ComParams = JsonConvert.SerializeObject((Object)comment["params"], Formatting.None);
+                    }
+                    //公式＆ニコスクリプト判定処理
+                    var targets = comment["params"]["targets"] as JArray;
+                    if (targets.Count > 3)
+                    {
+                        if (targets[2]["fork"].ToString() == "main")
+                        {
+                            this.IsOptional = true;
+                        }
+                        else if (targets[2]["fork"].ToString() == "easy")
+                        {
+                            this.IsNicos = true;
+                        }
+                    }
+                }
+
                 if (datajson["viewer"] != null)
                 {
                     if ((bool)datajson["viewer"]["isPremium"])
@@ -87,11 +122,6 @@ namespace Sirrene
                 {
                     if ((bool)datajson["system"]["isPeakTime"])
                         this.IsPeakTime = true;
-                }
-                else
-                {
-                    err = "JSON data system not found.";
-                    return (result, err);
                 }
 
                 if (datajson["media"]["domand"] != null)

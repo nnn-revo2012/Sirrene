@@ -77,7 +77,8 @@ namespace Sirrene.Proc
         //Sqlite3用の保存ファイル名
         public static string GetSaveFileSqlite3(ExecPsInfo epi)
         {
-            return Path.Combine(epi.Sdir, epi.Sfolder, epi.Sfile);
+            //return Path.Combine(epi.Sdir, epi.Sfolder, epi.Sfile);
+            return Path.Combine(epi.Sdir, epi.Sfile);
         }
 
         //Sqlite3の保存ファイルにシーケンスNoをつける
