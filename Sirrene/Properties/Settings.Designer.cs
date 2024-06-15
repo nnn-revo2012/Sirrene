@@ -25,7 +25,7 @@ namespace Sirrene.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("always")]
+        [global::System.Configuration.DefaultSettingValueAttribute("none")]
         public string IsLogin {
             get {
                 return ((string)(this["IsLogin"]));

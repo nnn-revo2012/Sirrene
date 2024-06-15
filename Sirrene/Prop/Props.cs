@@ -18,13 +18,16 @@ namespace Sirrene.Prop
         //public static readonly string UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36";
         public static readonly string NicoDomain = "https://www.nicovideo.jp/";
 
-        public static readonly string NicoVideoUrl = NicoDomain + "watch/";
+        public static readonly string NicoVideoUrl = NicoDomain + "watch_tmp/";
         public static readonly string NicoOrigin  = "https://www.nicovideo.jp";
         public static readonly string NicoUserUrl = "https://www.nicovideo.jp/user/";
 
         public static readonly string NicoLoginUrl = "https://account.nicovideo.jp/login/redirector?show_button_twitter=1&site=niconico&show_button_facebook=1&next_url=%2F";
 
         public static readonly string DmsSessionUrl = "https://nvapi.nicovideo.jp/v1/watch/%%VIDEOID%%/access-rights/hls?actionTrackId=%%TRACKID%%";
+
+        public static readonly string TmpSessionUrl = "https://www.nicovideo.jp/api/watch/tmp/%%VIDEOID%%?%%frontend%%";
+        public static readonly string TmpCommentUrl = "https://nvapi.nicovideo.jp/v1/tmp/comments/%%VIDEOID%%?%%frontend%%";
 
         public static readonly IDictionary<string, string> Quality =
             new Dictionary<string, string>()

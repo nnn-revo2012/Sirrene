@@ -44,22 +44,22 @@ namespace Sirrene
             this.rB_none = new System.Windows.Forms.RadioButton();
             this.rB_always = new System.Windows.Forms.RadioButton();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.textBox6 = new System.Windows.Forms.TextBox();
+            this.textBox5 = new System.Windows.Forms.TextBox();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.textBox4 = new System.Windows.Forms.TextBox();
             this.textBox3 = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
-            this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.textBox5 = new System.Windows.Forms.TextBox();
-            this.textBox6 = new System.Windows.Forms.TextBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.tabPage2.SuspendLayout();
-            this.groupBox3.SuspendLayout();
             this.groupBox4.SuspendLayout();
+            this.groupBox3.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -117,6 +117,7 @@ namespace Sirrene
             // textBox2
             // 
             this.textBox2.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.textBox2.Enabled = false;
             this.textBox2.Location = new System.Drawing.Point(98, 73);
             this.textBox2.Name = "textBox2";
             this.textBox2.Size = new System.Drawing.Size(168, 19);
@@ -139,6 +140,7 @@ namespace Sirrene
             // button3
             // 
             this.button3.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.button3.Enabled = false;
             this.button3.Location = new System.Drawing.Point(288, 69);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(66, 26);
@@ -149,6 +151,7 @@ namespace Sirrene
             // textBox1
             // 
             this.textBox1.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.textBox1.Enabled = false;
             this.textBox1.Location = new System.Drawing.Point(98, 43);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(256, 19);
@@ -178,6 +181,7 @@ namespace Sirrene
             // 
             this.rB_login.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.rB_login.AutoSize = true;
+            this.rB_login.Enabled = false;
             this.rB_login.Location = new System.Drawing.Point(16, 18);
             this.rB_login.Name = "rB_login";
             this.rB_login.Size = new System.Drawing.Size(116, 16);
@@ -202,7 +206,6 @@ namespace Sirrene
             // 
             this.rB_none.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.rB_none.AutoSize = true;
-            this.rB_none.Enabled = false;
             this.rB_none.Location = new System.Drawing.Point(123, 17);
             this.rB_none.Name = "rB_none";
             this.rB_none.Size = new System.Drawing.Size(88, 16);
@@ -215,6 +218,7 @@ namespace Sirrene
             // 
             this.rB_always.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.rB_always.AutoSize = true;
+            this.rB_always.Enabled = false;
             this.rB_always.Location = new System.Drawing.Point(16, 18);
             this.rB_always.Name = "rB_always";
             this.rB_always.Size = new System.Drawing.Size(99, 16);
@@ -235,6 +239,31 @@ namespace Sirrene
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "ファイル設定";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // groupBox4
+            // 
+            this.groupBox4.Controls.Add(this.textBox6);
+            this.groupBox4.Controls.Add(this.textBox5);
+            this.groupBox4.Location = new System.Drawing.Point(8, 180);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(373, 127);
+            this.groupBox4.TabIndex = 2;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "コメントファイル";
+            // 
+            // textBox6
+            // 
+            this.textBox6.Location = new System.Drawing.Point(42, 56);
+            this.textBox6.Name = "textBox6";
+            this.textBox6.Size = new System.Drawing.Size(229, 19);
+            this.textBox6.TabIndex = 3;
+            // 
+            // textBox5
+            // 
+            this.textBox5.Location = new System.Drawing.Point(42, 18);
+            this.textBox5.Name = "textBox5";
+            this.textBox5.Size = new System.Drawing.Size(293, 19);
+            this.textBox5.TabIndex = 2;
             // 
             // checkBox1
             // 
@@ -293,31 +322,6 @@ namespace Sirrene
             this.button2.Text = "CANCEL";
             this.button2.UseVisualStyleBackColor = true;
             // 
-            // groupBox4
-            // 
-            this.groupBox4.Controls.Add(this.textBox6);
-            this.groupBox4.Controls.Add(this.textBox5);
-            this.groupBox4.Location = new System.Drawing.Point(8, 180);
-            this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(373, 127);
-            this.groupBox4.TabIndex = 2;
-            this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "コメントファイル";
-            // 
-            // textBox5
-            // 
-            this.textBox5.Location = new System.Drawing.Point(42, 18);
-            this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(293, 19);
-            this.textBox5.TabIndex = 2;
-            // 
-            // textBox6
-            // 
-            this.textBox6.Location = new System.Drawing.Point(42, 56);
-            this.textBox6.Name = "textBox6";
-            this.textBox6.Size = new System.Drawing.Size(229, 19);
-            this.textBox6.TabIndex = 3;
-            // 
             // Form2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -339,10 +343,10 @@ namespace Sirrene
             this.groupBox1.PerformLayout();
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
-            this.groupBox3.ResumeLayout(false);
-            this.groupBox3.PerformLayout();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
+            this.groupBox3.ResumeLayout(false);
+            this.groupBox3.PerformLayout();
             this.ResumeLayout(false);
 
         }

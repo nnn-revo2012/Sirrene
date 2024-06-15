@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="IsLogin" Type="System.String" Scope="User">
-      <Value Profile="(Default)">always</Value>
+      <Value Profile="(Default)">none</Value>
     </Setting>
     <Setting Name="LoginMethod" Type="System.String" Scope="User">
       <Value Profile="(Default)">login</Value>
